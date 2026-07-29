@@ -1,0 +1,184 @@
+// Bulk Supply — wholesale ordering platform schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  CASHIER
+  DELIVERY
+}
+
+enum AccountStatus {
+  PENDING
+  APPROVED
+  CLOSED
+}
+
+enum StockStatus {
+  IN_STOCK
+  LOW_STOCK
+  NEW_STOCK
+  OUT_OF_STOCK
+}
+
+enum OrderStatus {
+  RECEIVED
+  ORDER_CONFIRMED
+  PRICE_QUOTED
+  PAYMENT_PROCESSING
+  ORDER_INVOICED
+  ON_DELIVERY
+  COMPLETE
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  phone        String   @unique
+  passwordHash String
+  role         Role     @default(CUSTOMER)
+  createdAt    DateTime @default(now())
+
+  accounts BusinessAccount[]
+  orders   Order[]
+}
+
+model BusinessAccount {
+  id        String        @id @default(cuid())
+  name      String
+  type      String        @default("BUSINESS")
+  location  String
+  status    AccountStatus @default(PENDING)
+  ownerId   String
+  owner     User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  orders Order[]
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  sortOrder Int      @default(0)
+  products Product[]
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  sku         String      @unique
+  name        String
+  slug        String      @unique
+  description String?
+  imageUrl    String?
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  stockStatus StockStatus @default(IN_STOCK)
+  createdAt   DateTime    @default(now())
+
+  units     ProductUnit[]
+  inventory InventoryItem?
+  orderItems OrderItem[]
+}
+
+model ProductUnit {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label     String // e.g. "Dozen", "Carton", "Packet"
+  packSize  String // e.g. "12 X 200ML"
+  price     Float
+  isDefault Boolean @default(false)
+
+  @@unique([productId, label])
+}
+
+model InventoryItem {
+  id                String   @id @default(cuid())
+  productId         String   @unique
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantityOnHand    Int      @default(0)
+  lowStockThreshold Int      @default(10)
+  updatedAt         DateTime @updatedAt
+
+  adjustments InventoryAdjustment[]
+}
+
+model InventoryAdjustment {
+  id              String        @id @default(cuid())
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  change          Int
+  reason          String
+  createdAt       DateTime      @default(now())
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  orderNumber       String      @unique
+  userId            String
+  user              User        @relation(fields: [userId], references: [id])
+  businessAccountId String?
+  businessAccount   BusinessAccount? @relation(fields: [businessAccountId], references: [id])
+  status            OrderStatus @default(RECEIVED)
+  deliveryMethod    String      @default("delivery")
+  customerReference String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  items    OrderItem[]
+  invoice  Invoice?
+  delivery DeliveryInfo?
+  history  OrderStatusHistory[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  unitLabel String
+  quantity  Int
+  unitPrice Float
+  amount    Float
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  orderId     String   @unique
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  referenceNo String
+  amount      Float
+  issuedAt    DateTime @default(now())
+}
+
+model DeliveryInfo {
+  id              String    @id @default(cuid())
+  orderId         String    @unique
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  location        String
+  addressDetails  String?
+  addressLocation String?
+  deliveredAt     DateTime?
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  changedAt DateTime    @default(now())
+  changedBy String?
+}

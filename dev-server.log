@@ -1,0 +1,61 @@
+
+> bulk-supply@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.12 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.100.128:3000
+- Environments: .env
+✓ Ready in 1222ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+ GET /?category=dairy 200 in 1139ms (next.js: 420ms, application-code: 719ms)
+ GET / 200 in 308ms (next.js: 8ms, application-code: 301ms)
+ GET /api/auth/session 200 in 2.3s (next.js: 2.2s, application-code: 74ms)
+ GET /api/auth/session 200 in 134ms (next.js: 17ms, application-code: 117ms)
+ GET /api/accounts 200 in 111ms (next.js: 60ms, application-code: 51ms)
+ GET /admin/login 200 in 485ms (next.js: 127ms, proxy.ts: 124ms, application-code: 234ms)
+ GET /api/auth/session 200 in 66ms (next.js: 37ms, application-code: 30ms)
+ GET /api/auth/session 200 in 26ms (next.js: 8ms, application-code: 18ms)
+ GET /api/auth/providers 200 in 25ms (next.js: 11ms, application-code: 14ms)
+ GET /api/auth/csrf 200 in 20ms (next.js: 8ms, application-code: 12ms)
+ POST /api/auth/callback/credentials? 200 in 279ms (next.js: 5ms, application-code: 273ms)
+ GET /api/auth/session 200 in 39ms (next.js: 8ms, application-code: 31ms)
+ GET /admin 200 in 289ms (next.js: 77ms, proxy.ts: 41ms, application-code: 171ms)
+ GET /admin 200 in 343ms (next.js: 21ms, proxy.ts: 82ms, application-code: 240ms)
+ GET /admin/orders 200 in 311ms (next.js: 81ms, proxy.ts: 20ms, application-code: 210ms)
+ GET /admin/orders 200 in 224ms (next.js: 29ms, proxy.ts: 70ms, application-code: 125ms)
+ GET /admin/products 307 in 874ms (next.js: 181ms, proxy.ts: 55ms, application-code: 639ms)
+ GET /admin/orders 200 in 347ms (next.js: 18ms, proxy.ts: 32ms, application-code: 297ms)
+ GET /api/auth/session 200 in 67ms (next.js: 28ms, application-code: 38ms)
+ GET /api/auth/session 200 in 36ms (next.js: 9ms, application-code: 26ms)
+ GET /admin/orders 200 in 297ms (next.js: 14ms, proxy.ts: 28ms, application-code: 255ms)
+ GET /api/auth/session 200 in 35ms (next.js: 5ms, application-code: 30ms)
+ GET /api/auth/session 200 in 37ms (next.js: 8ms, application-code: 28ms)
+ GET /admin/orders/cms5yd2w10001vqr4ucwma2nw 200 in 1688ms (proxy.ts: 65ms)
+ GET /admin/login 200 in 291ms (next.js: 19ms, proxy.ts: 22ms, application-code: 250ms)
+ GET /api/auth/session 200 in 68ms (next.js: 30ms, application-code: 38ms)
+ GET /api/auth/session 200 in 34ms (next.js: 16ms, application-code: 18ms)
+ GET /api/auth/providers 200 in 742ms (next.js: 295ms, application-code: 447ms)
+ GET /api/auth/csrf 200 in 770ms (next.js: 55ms, application-code: 716ms)
+ POST /api/auth/callback/credentials? 200 in 2.4s (next.js: 528ms, application-code: 1919ms)
+ GET /admin/login 200 in 4.0s (next.js: 504ms, proxy.ts: 274ms, application-code: 3.2s)
+ GET /api/auth/session 200 in 143ms (next.js: 57ms, application-code: 87ms)
+ GET /api/auth/session 200 in 97ms (next.js: 19ms, application-code: 78ms)
+ GET /admin/orders 200 in 2.3s (next.js: 32ms, proxy.ts: 92ms, application-code: 2.2s)
+ GET /api/auth/session 200 in 77ms (next.js: 26ms, application-code: 51ms)
+ GET /api/auth/session 200 in 35ms (next.js: 7ms, application-code: 27ms)
+ GET /admin/orders/cms5yd2w10001vqr4ucwma2nw 200 in 701ms (next.js: 64ms, proxy.ts: 32ms, application-code: 605ms)
+ GET /admin/login 200 in 434ms (next.js: 17ms, proxy.ts: 10ms, application-code: 408ms)
+ GET /api/auth/session 200 in 63ms (next.js: 31ms, application-code: 32ms)
+ GET /api/auth/session 200 in 37ms (next.js: 13ms, application-code: 24ms)
+ GET /api/auth/providers 200 in 39ms (next.js: 15ms, application-code: 24ms)
+ GET /api/auth/csrf 200 in 27ms (next.js: 9ms, application-code: 18ms)
+ POST /api/auth/callback/credentials? 200 in 297ms (next.js: 16ms, application-code: 281ms)
+ GET /api/auth/session 200 in 50ms (next.js: 11ms, application-code: 39ms)
+ GET /admin 200 in 637ms (next.js: 16ms, proxy.ts: 36ms, application-code: 585ms)
+ GET /admin 200 in 673ms (next.js: 47ms, proxy.ts: 257ms, application-code: 368ms)
+○ Compiling /admin/staff ...
+ GET /admin/staff 200 in 5.6s (next.js: 4.4s, proxy.ts: 19ms, application-code: 1159ms)
+ GET /api/auth/session 200 in 208ms (next.js: 77ms, application-code: 131ms)
+ GET /api/auth/session 200 in 51ms (next.js: 9ms, application-code: 42ms)

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { StockStatus, OrderStatus, Role } from "@prisma/client";
+import { StockStatus, OrderStatus, Role, AccountStatus } from "@prisma/client";
 import { isStaffRole, canSetOrderStatus } from "@/lib/roles";
 
 async function requireAdmin() {
@@ -256,4 +256,13 @@ export async function deactivateStaffUser(userId: string) {
   await requireAdmin();
   await prisma.user.delete({ where: { id: userId } });
   revalidatePath("/admin/staff");
+}
+
+export async function updateBusinessAccountStatus(accountId: string, status: AccountStatus) {
+  await requireAdmin();
+  await prisma.businessAccount.update({
+    where: { id: accountId },
+    data: { status },
+  });
+  revalidatePath("/admin/accounts");
 }

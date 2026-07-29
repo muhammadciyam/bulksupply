@@ -9,6 +9,9 @@ export async function POST(req: Request) {
   const email = (body.email as string | undefined)?.trim().toLowerCase();
   const phone = (body.phone as string | undefined)?.trim();
   const password = body.password as string | undefined;
+  const businessName = (body.businessName as string | undefined)?.trim();
+  const businessType = (body.businessType as string | undefined)?.trim() || "BUSINESS";
+  const businessLocation = (body.businessLocation as string | undefined)?.trim();
 
   if (!firstName || !lastName || !email || !phone || !password) {
     return NextResponse.json({ error: "All fields are required" }, { status: 400 });
@@ -32,7 +35,23 @@ export async function POST(req: Request) {
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { firstName, lastName, email, phone, passwordHash },
+    data: {
+      firstName,
+      lastName,
+      email,
+      phone,
+      passwordHash,
+      accounts:
+        businessName && businessLocation
+          ? {
+              create: {
+                name: businessName,
+                type: businessType,
+                location: businessLocation,
+              },
+            }
+          : undefined,
+    },
   });
 
   return NextResponse.json({ id: user.id, email: user.email });

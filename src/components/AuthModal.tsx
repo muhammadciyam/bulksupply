@@ -121,6 +121,9 @@ function RegisterForm({ onSuccess, onSwitch }: { onSuccess: () => void; onSwitch
     email: "",
     phone: "",
     password: "",
+    businessName: "",
+    businessType: "BUSINESS",
+    businessLocation: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -189,6 +192,37 @@ function RegisterForm({ onSuccess, onSwitch }: { onSuccess: () => void; onSwitch
         required
         className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-green"
       />
+
+      <div className="border-t border-gray-100 pt-3 mt-1">
+        <p className="text-xs font-semibold text-gray-500 mb-2">
+          Your Business Account (optional — you can add this later too)
+        </p>
+        <div className="space-y-3">
+          <input
+            placeholder="Business Name e.g. Seven Mart"
+            value={form.businessName}
+            onChange={(e) => update("businessName", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-green"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <select
+              value={form.businessType}
+              onChange={(e) => update("businessType", e.target.value)}
+              className="border border-gray-300 rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-green text-sm"
+            >
+              <option value="BUSINESS">Business</option>
+              <option value="INDIVIDUAL">Individual</option>
+            </select>
+            <input
+              placeholder="Location e.g. Male'"
+              value={form.businessLocation}
+              onChange={(e) => update("businessLocation", e.target.value)}
+              className="border border-gray-300 rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-green"
+            />
+          </div>
+        </div>
+      </div>
+
       {error && <p className="text-sm text-brand-red">{error}</p>}
       <button
         type="submit"

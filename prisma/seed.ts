@@ -162,6 +162,7 @@ async function main() {
     { name: "Seven Mart", location: "Hulhumale", status: AccountStatus.APPROVED },
     { name: "Tiny Nemo", location: "Hulhumale", status: AccountStatus.CLOSED },
     { name: "City Wholesale", location: "Hulhumale", status: AccountStatus.CLOSED },
+    { name: "Male City Store", location: "Male'", status: AccountStatus.PENDING },
   ];
 
   const createdAccounts = [];

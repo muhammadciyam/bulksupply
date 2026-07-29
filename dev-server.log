@@ -463,3 +463,5 @@
  GET / 200 in 184ms (next.js: 47ms, application-code: 137ms)
  GET /api/accounts 200 in 198ms (next.js: 158ms, application-code: 41ms)
  GET /api/accounts 200 in 23ms (next.js: 5ms, application-code: 18ms)
+✓ Compiled in 328ms
+ GET / 200 in 184ms (next.js: 106ms, application-code: 78ms)

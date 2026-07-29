@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -11,6 +12,8 @@ import {
   LogOut,
   ExternalLink,
   Users,
+  Menu,
+  X,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ROLE_LABELS, type StaffRole } from "@/lib/roles";
@@ -34,14 +37,38 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const items = NAV.filter((item) => item.roles.includes(role));
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen flex bg-gray-50">
-      <aside className="w-60 shrink-0 bg-brand-navy text-white flex flex-col">
-        <div className="p-5 border-b border-white/10">
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 shrink-0 bg-brand-navy text-white flex flex-col transform transition-transform duration-200 md:static md:z-auto md:w-60 md:translate-x-0 ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="p-5 border-b border-white/10 flex items-center justify-between">
           <Logo className="[&_span]:text-white [&_span:first-child]:text-white [&_span:last-child]:text-emerald-300" />
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="md:hidden text-white/70 hover:text-white"
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
         </div>
-        <nav className="flex-1 py-4">
+        <nav className="flex-1 py-4 overflow-y-auto">
           {items.map((item) => {
             const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
             const Icon = item.icon;
@@ -76,11 +103,22 @@ export function AdminShell({
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-          <p className="text-sm text-gray-500">Bulk Supply Admin · {ROLE_LABELS[role]}</p>
-          <p className="text-sm font-medium text-gray-700">{userName}</p>
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="md:hidden text-gray-500 hover:text-brand-green shrink-0"
+              aria-label="Open menu"
+            >
+              <Menu size={22} />
+            </button>
+            <p className="text-sm text-gray-500 truncate">
+              Bulk Supply Admin <span className="hidden sm:inline">· {ROLE_LABELS[role]}</span>
+            </p>
+          </div>
+          <p className="text-sm font-medium text-gray-700 shrink-0 truncate max-w-[40%]">{userName}</p>
         </header>
-        <main className="flex-1 p-6 overflow-x-auto">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 overflow-x-auto">{children}</main>
       </div>
     </div>
   );

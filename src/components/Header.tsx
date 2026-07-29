@@ -12,7 +12,7 @@ import { useCartStore } from "@/lib/cart-store";
 type Account = { id: string; name: string; status: string };
 
 export function Header() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -58,9 +58,9 @@ export function Header() {
   return (
     <>
       <header className="border-b border-gray-200 bg-white sticky top-0 z-40">
-        <div className="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-4">
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-4">
           <Logo />
-          <form onSubmit={handleSearch} className="flex-1 hidden sm:flex">
+          <form onSubmit={handleSearch} className="flex-1 hidden md:flex">
             <div className="w-full flex items-center bg-gray-100 rounded-md px-3 py-2 gap-2">
               <Search size={16} className="text-gray-400" />
               <input
@@ -71,23 +71,29 @@ export function Header() {
               />
             </div>
           </form>
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-1.5 sm:gap-3 ml-auto">
             <button
-              className="hidden sm:flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-500 hover:text-brand-green"
+              className="hidden lg:flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-500 hover:text-brand-green"
               title="Rewards"
             >
               <Gift size={18} />
             </button>
 
-            {status === "authenticated" && activeAccount && (
+            {status === "authenticated" && (
               <div className="relative" ref={menuRef}>
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
-                  className="hidden md:flex items-center gap-1.5 border border-gray-200 rounded-md px-3 py-1.5 text-sm font-semibold text-gray-700 hover:border-brand-green"
+                  className="hidden md:flex items-center gap-1.5 border border-gray-200 rounded-md px-3 py-1.5 text-sm font-semibold text-gray-700 hover:border-brand-green max-w-[160px] lg:max-w-none"
                 >
-                  <Store size={16} />
-                  {activeAccount.name.toUpperCase()}
-                  <ChevronDown size={14} />
+                  <Store size={16} className="shrink-0" />
+                  <span className="truncate">{activeAccount ? activeAccount.name.toUpperCase() : "ACCOUNT"}</span>
+                  <ChevronDown size={14} className="shrink-0" />
+                </button>
+                <button
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="md:hidden flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-500"
+                >
+                  <User size={18} />
                 </button>
                 {menuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg py-2 text-sm">
@@ -100,27 +106,31 @@ export function Header() {
                     <Link href="/account/accounts" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setMenuOpen(false)}>
                       My Accounts
                     </Link>
-                    <div className="border-t border-gray-100 my-1" />
-                    <p className="px-4 pt-1 pb-1 text-xs text-gray-400">Select an account</p>
-                    {accounts.map((a) => (
-                      <button
-                        key={a.id}
-                        onClick={() => {
-                          setActiveAccount(a.id);
-                          setMenuOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2 px-4 py-1.5 hover:bg-gray-50 text-left"
-                      >
-                        <span
-                          className={`h-3.5 w-3.5 rounded-full border-2 ${
-                            a.id === activeAccount.id
-                              ? "border-brand-green bg-brand-green"
-                              : "border-gray-300"
-                          }`}
-                        />
-                        {a.name}
-                      </button>
-                    ))}
+                    {accounts.length > 0 && (
+                      <>
+                        <div className="border-t border-gray-100 my-1" />
+                        <p className="px-4 pt-1 pb-1 text-xs text-gray-400">Select an account</p>
+                        {accounts.map((a) => (
+                          <button
+                            key={a.id}
+                            onClick={() => {
+                              setActiveAccount(a.id);
+                              setMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-1.5 hover:bg-gray-50 text-left"
+                          >
+                            <span
+                              className={`h-3.5 w-3.5 rounded-full border-2 shrink-0 ${
+                                activeAccount && a.id === activeAccount.id
+                                  ? "border-brand-green bg-brand-green"
+                                  : "border-gray-300"
+                              }`}
+                            />
+                            <span className="truncate">{a.name}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
                     <div className="border-t border-gray-100 my-1" />
                     <button
                       onClick={() => signOut({ callbackUrl: "/" })}
@@ -135,7 +145,7 @@ export function Header() {
 
             <Link
               href="/cart"
-              className="relative flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-500 hover:text-brand-green"
+              className="relative flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-500 hover:text-brand-green shrink-0"
             >
               <ShoppingCart size={18} />
               {totalItems > 0 && (
@@ -145,23 +155,28 @@ export function Header() {
               )}
             </Link>
 
-            {status === "authenticated" ? (
-              <button
-                onClick={() => setMenuOpen((v) => !v)}
-                className="md:hidden flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-500"
-              >
-                <User size={18} />
-              </button>
-            ) : (
+            {status !== "authenticated" && (
               <button
                 onClick={() => setAuthOpen(true)}
-                className="bg-brand-green hover:bg-brand-green-dark text-white text-sm font-semibold px-4 py-2 rounded-md whitespace-nowrap"
+                className="bg-brand-green hover:bg-brand-green-dark text-white text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md whitespace-nowrap shrink-0"
               >
-                Login / Register
+                <span className="sm:hidden">Login</span>
+                <span className="hidden sm:inline">Login / Register</span>
               </button>
             )}
           </div>
         </div>
+        <form onSubmit={handleSearch} className="md:hidden px-3 pb-2.5">
+          <div className="w-full flex items-center bg-gray-100 rounded-md px-3 py-2 gap-2">
+            <Search size={16} className="text-gray-400 shrink-0" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search your products from here"
+              className="bg-transparent outline-none text-sm w-full"
+            />
+          </div>
+        </form>
       </header>
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </>

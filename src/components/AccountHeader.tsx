@@ -42,24 +42,25 @@ export function AccountHeader() {
 
   return (
     <header className="border-b border-gray-200 bg-white">
-      <div className="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-4">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-4">
         <Logo />
         <Link
           href="/"
-          className="bg-brand-green hover:bg-brand-green-dark text-white text-sm font-semibold px-4 py-2 rounded-md"
+          className="bg-brand-green hover:bg-brand-green-dark text-white text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md whitespace-nowrap shrink-0"
         >
-          Continue Shopping
+          <span className="sm:hidden">Shop</span>
+          <span className="hidden sm:inline">Continue Shopping</span>
         </Link>
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex items-center gap-1.5 sm:gap-3 ml-auto">
           {activeAccount && (
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-1.5 border border-gray-200 rounded-md px-3 py-1.5 text-sm font-semibold text-gray-700 hover:border-brand-green"
+                className="flex items-center gap-1.5 border border-gray-200 rounded-md px-2 sm:px-3 py-1.5 text-sm font-semibold text-gray-700 hover:border-brand-green max-w-[110px] sm:max-w-[180px]"
               >
-                <Store size={16} />
-                <span className="hidden sm:inline">{activeAccount.name.toUpperCase()}</span>
-                <ChevronDown size={14} />
+                <Store size={16} className="shrink-0" />
+                <span className="hidden sm:inline truncate">{activeAccount.name.toUpperCase()}</span>
+                <ChevronDown size={14} className="shrink-0" />
               </button>
               {menuOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg py-2 text-sm z-20">

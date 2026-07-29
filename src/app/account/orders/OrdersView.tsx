@@ -138,24 +138,26 @@ export function OrdersView({ orders }: { orders: Order[] }) {
           {selected.status !== "CANCELLED" && (
             <div>
               <p className="text-sm font-semibold text-gray-600 mb-4">Progress</p>
-              <div className="flex items-center">
-                {ORDER_STEPS.map((step, i) => (
-                  <div key={step.key} className="flex items-center flex-1 last:flex-none">
-                    <div className="flex flex-col items-center gap-1">
-                      <div
-                        className={`h-7 w-7 rounded-full flex items-center justify-center text-white text-xs ${
-                          i <= stepIndex ? "bg-brand-green" : "bg-gray-200"
-                        }`}
-                      >
-                        {i <= stepIndex ? <Check size={14} /> : ""}
+              <div className="overflow-x-auto -mx-1 px-1">
+                <div className="flex items-center min-w-[560px]">
+                  {ORDER_STEPS.map((step, i) => (
+                    <div key={step.key} className="flex items-center flex-1 last:flex-none">
+                      <div className="flex flex-col items-center gap-1">
+                        <div
+                          className={`h-7 w-7 rounded-full flex items-center justify-center text-white text-xs shrink-0 ${
+                            i <= stepIndex ? "bg-brand-green" : "bg-gray-200"
+                          }`}
+                        >
+                          {i <= stepIndex ? <Check size={14} /> : ""}
+                        </div>
+                        <span className="text-[10px] text-gray-500 text-center w-16">{step.label}</span>
                       </div>
-                      <span className="text-[10px] text-gray-500 text-center w-16">{step.label}</span>
+                      {i < ORDER_STEPS.length - 1 && (
+                        <div className={`h-0.5 flex-1 ${i < stepIndex ? "bg-brand-green" : "bg-gray-200"}`} />
+                      )}
                     </div>
-                    {i < ORDER_STEPS.length - 1 && (
-                      <div className={`h-0.5 flex-1 ${i < stepIndex ? "bg-brand-green" : "bg-gray-200"}`} />
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}

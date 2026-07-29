@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { ShoppingCart, Store, ChevronDown, LogOut } from "lucide-react";
+import { ShoppingCart, Store, ChevronDown, LogOut, UserCircle, ClipboardList, Users } from "lucide-react";
 import { Logo } from "./Logo";
 import { useCartStore } from "@/lib/cart-store";
 
@@ -51,12 +51,12 @@ export function AccountHeader() {
           <span className="sm:hidden">Shop</span>
           <span className="hidden sm:inline">Continue Shopping</span>
         </Link>
-        <div className="flex items-center gap-1.5 sm:gap-3 ml-auto">
+        <div className="flex items-center gap-1 sm:gap-2 ml-auto">
           {activeAccount && (
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-1.5 border border-gray-200 rounded-md px-2 sm:px-3 py-1.5 text-sm font-semibold text-gray-700 hover:border-brand-green max-w-[110px] sm:max-w-[180px]"
+                className="flex items-center gap-1.5 border border-gray-200 rounded-full pl-2 sm:pl-3 pr-2 sm:pr-2.5 py-1.5 text-sm font-semibold text-gray-700 hover:border-brand-green hover:text-brand-green transition-colors max-w-[110px] sm:max-w-[180px]"
               >
                 <Store size={16} className="shrink-0" />
                 <span className="hidden sm:inline truncate">{activeAccount.name.toUpperCase()}</span>
@@ -84,9 +84,41 @@ export function AccountHeader() {
               )}
             </div>
           )}
+          <div className="hidden lg:block h-6 w-px bg-gray-200 mx-1" />
+          <div className="hidden lg:flex items-center gap-0.5">
+            <Link
+              href="/account/profile"
+              title="Profile"
+              className="flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-brand-green transition-colors"
+            >
+              <UserCircle size={18} />
+            </Link>
+            <Link
+              href="/account/orders"
+              title="My Orders"
+              className="flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-brand-green transition-colors"
+            >
+              <ClipboardList size={18} />
+            </Link>
+            <Link
+              href="/account/accounts"
+              title="My Accounts"
+              className="flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-brand-green transition-colors"
+            >
+              <Users size={18} />
+            </Link>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              title="Logout"
+              className="flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-red-50 hover:text-brand-red transition-colors"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+          <div className="hidden lg:block h-6 w-px bg-gray-200 mx-1" />
           <Link
             href="/cart"
-            className="relative flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-500 hover:text-brand-green"
+            className="relative flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-brand-green/10 hover:text-brand-green transition-colors"
           >
             <ShoppingCart size={18} />
             {totalItems > 0 && (

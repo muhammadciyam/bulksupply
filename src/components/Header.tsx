@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Search, Gift, ShoppingCart, User, Store, ChevronDown, LogOut } from "lucide-react";
+import { Search, Gift, ShoppingCart, User, Store, ChevronDown, LogOut, UserCircle, ClipboardList } from "lucide-react";
 import { Logo } from "./Logo";
 import { AuthModal } from "./AuthModal";
 import { useCartStore } from "@/lib/cart-store";
@@ -71,9 +71,9 @@ export function Header() {
               />
             </div>
           </form>
-          <div className="flex items-center gap-1.5 sm:gap-3 ml-auto">
+          <div className="flex items-center gap-1 sm:gap-2 ml-auto">
             <button
-              className="hidden lg:flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-500 hover:text-brand-green"
+              className="hidden lg:flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-brand-green transition-colors"
               title="Rewards"
             >
               <Gift size={18} />
@@ -83,7 +83,7 @@ export function Header() {
               <div className="relative" ref={menuRef}>
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
-                  className="hidden md:flex items-center gap-1.5 border border-gray-200 rounded-md px-3 py-1.5 text-sm font-semibold text-gray-700 hover:border-brand-green max-w-[160px] lg:max-w-none"
+                  className="hidden md:flex items-center gap-1.5 border border-gray-200 rounded-full pl-3 pr-2.5 py-1.5 text-sm font-semibold text-gray-700 hover:border-brand-green hover:text-brand-green transition-colors max-w-[160px] lg:max-w-none"
                 >
                   <Store size={16} className="shrink-0" />
                   <span className="truncate">{activeAccount ? activeAccount.name.toUpperCase() : "ACCOUNT"}</span>
@@ -91,7 +91,7 @@ export function Header() {
                 </button>
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
-                  className="md:hidden flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-500"
+                  className="md:hidden flex items-center justify-center h-9 w-9 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
                 >
                   <User size={18} />
                 </button>
@@ -143,9 +143,39 @@ export function Header() {
               </div>
             )}
 
+            {status === "authenticated" && (
+              <>
+                <div className="hidden lg:block h-6 w-px bg-gray-200 mx-1" />
+                <div className="hidden lg:flex items-center gap-0.5">
+                  <Link
+                    href="/account/profile"
+                    title="Profile"
+                    className="flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-brand-green transition-colors"
+                  >
+                    <UserCircle size={18} />
+                  </Link>
+                  <Link
+                    href="/account/orders"
+                    title="My Orders"
+                    className="flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-brand-green transition-colors"
+                  >
+                    <ClipboardList size={18} />
+                  </Link>
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    title="Logout"
+                    className="flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-red-50 hover:text-brand-red transition-colors"
+                  >
+                    <LogOut size={18} />
+                  </button>
+                </div>
+                <div className="hidden lg:block h-6 w-px bg-gray-200 mx-1" />
+              </>
+            )}
+
             <Link
               href="/cart"
-              className="relative flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-500 hover:text-brand-green shrink-0"
+              className="relative flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-brand-green/10 hover:text-brand-green transition-colors shrink-0"
             >
               <ShoppingCart size={18} />
               {totalItems > 0 && (
@@ -158,7 +188,7 @@ export function Header() {
             {status !== "authenticated" && (
               <button
                 onClick={() => setAuthOpen(true)}
-                className="bg-brand-green hover:bg-brand-green-dark text-white text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md whitespace-nowrap shrink-0"
+                className="bg-brand-green hover:bg-brand-green-dark text-white text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md whitespace-nowrap shrink-0 ml-1"
               >
                 <span className="sm:hidden">Login</span>
                 <span className="hidden sm:inline">Login / Register</span>

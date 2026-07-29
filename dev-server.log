@@ -7,3 +7,7 @@
 - Network:       http://192.168.100.128:3000
 - Environments: .env
 ✓ Ready in 4.0s
+○ Compiling middleware ...
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+○ Compiling / ...

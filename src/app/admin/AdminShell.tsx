@@ -14,6 +14,7 @@ import {
   Users,
   Menu,
   X,
+  Building2,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ROLE_LABELS, type StaffRole } from "@/lib/roles";
@@ -23,6 +24,7 @@ const NAV: { href: string; label: string; icon: typeof LayoutDashboard; roles: S
   { href: "/admin/products", label: "Products", icon: Package, roles: ["ADMIN"] },
   { href: "/admin/inventory", label: "Inventory", icon: Boxes, roles: ["ADMIN"] },
   { href: "/admin/orders", label: "Orders & Delivery", icon: Truck, roles: ["ADMIN", "CASHIER", "DELIVERY"] },
+  { href: "/admin/accounts", label: "Customer Accounts", icon: Building2, roles: ["ADMIN"] },
   { href: "/admin/staff", label: "Staff", icon: Users, roles: ["ADMIN"] },
 ];
 

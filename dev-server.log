@@ -2055,3 +2055,39 @@ Unique constraint failed on the fields: (`phone`)
  GET /admin/orders 200 in 153ms (next.js: 9ms, proxy.ts: 15ms, application-code: 129ms)
  GET /api/auth/session 200 in 40ms (next.js: 15ms, application-code: 25ms)
  GET /api/auth/session 200 in 23ms (next.js: 5ms, application-code: 18ms)
+ GET /api/auth/session 200 in 2.2s (next.js: 281ms, application-code: 1914ms)
+⨯ Error: [next-auth]: `useSession` must be wrapped in a <SessionProvider />
+    at AccountHeader (src\components\AccountHeader.tsx:13:32)
+  11 |
+  12 | export function AccountHeader() {
+> 13 |   const { status } = useSession();
+     |                                ^
+  14 |   const [accounts, setAccounts] = useState<Account[]>([]);
+  15 |   const [menuOpen, setMenuOpen] = useState(false);
+  16 |   const menuRef = useRef<HTMLDivElement>(null); {
+  digest: '945601657'
+}
+ GET /account/orders 200 in 4.7s (next.js: 803ms, proxy.ts: 1715ms, application-code: 2.2s)
+ GET /api/auth/session 200 in 1766ms (next.js: 92ms, application-code: 1673ms)
+ GET /account/orders 200 in 2.3s (next.js: 971ms, proxy.ts: 763ms, application-code: 537ms)
+ GET / 200 in 2.1s (next.js: 36ms, application-code: 2.1s)
+ GET /account/orders 500 in 5.8s (next.js: 175ms, proxy.ts: 1726ms, application-code: 3.9s)
+ GET /api/auth/session 200 in 2.0s (next.js: 132ms, application-code: 1885ms)
+ GET /api/accounts 200 in 115ms (next.js: 11ms, application-code: 104ms)
+ GET /api/auth/session 200 in 92ms (next.js: 8ms, application-code: 83ms)
+ GET / 200 in 111ms (next.js: 12ms, application-code: 99ms)
+ GET /api/accounts 200 in 64ms (next.js: 17ms, application-code: 47ms)
+ GET /api/accounts 200 in 60ms (next.js: 10ms, application-code: 51ms)
+ GET /account/orders 200 in 84ms (next.js: 8ms, proxy.ts: 12ms, application-code: 64ms)
+ GET /api/accounts 200 in 68ms (next.js: 8ms, application-code: 60ms)
+ GET /api/accounts 200 in 75ms (next.js: 19ms, application-code: 56ms)
+ GET /account/profile 200 in 987ms (next.js: 601ms, proxy.ts: 13ms, application-code: 373ms)
+ GET /api/accounts 200 in 175ms (next.js: 26ms, application-code: 148ms)
+ GET /api/accounts 200 in 140ms (next.js: 27ms, application-code: 112ms)
+ GET /account/accounts 200 in 105ms (next.js: 14ms, proxy.ts: 20ms, application-code: 71ms)
+ GET /api/accounts 200 in 76ms (next.js: 5ms, application-code: 70ms)
+ GET /api/accounts 200 in 76ms (next.js: 22ms, application-code: 54ms)
+ GET / 200 in 84ms (next.js: 11ms, application-code: 73ms)
+ GET /api/accounts 200 in 26ms (next.js: 10ms, application-code: 16ms)
+ GET /api/accounts 200 in 36ms (next.js: 5ms, application-code: 31ms)
+ GET / 200 in 184ms (next.js: 12ms, application-code: 172ms)

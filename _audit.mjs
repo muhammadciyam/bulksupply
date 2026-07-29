@@ -27,7 +27,7 @@ async function shotPage(name, path, opts = {}) {
     }
     if (opts.loginCustomer) {
       await page.goto(base + "/", { waitUntil: "networkidle" });
-      await page.click("text=Login / Register");
+      await page.click('header button:has-text("Login")');
       await page.waitForSelector("text=Mobile Number / Email");
       const modal = page.locator(".fixed.inset-0");
       await modal.locator("input").nth(0).fill(opts.loginCustomer.email);

@@ -14,11 +14,14 @@ export type CartLine = {
 type CartState = {
   lines: CartLine[];
   activeAccountId: string | null;
+  drawerOpen: boolean;
   addLine: (line: Omit<CartLine, "quantity">, qty?: number) => void;
   removeLine: (productId: string, unitLabel: string) => void;
   setQuantity: (productId: string, unitLabel: string, qty: number) => void;
   clear: () => void;
   setActiveAccount: (id: string | null) => void;
+  openDrawer: () => void;
+  closeDrawer: () => void;
   totalItems: () => number;
   totalAmount: () => number;
 };
@@ -28,6 +31,7 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       lines: [],
       activeAccountId: null,
+      drawerOpen: false,
       addLine: (line, qty = 1) =>
         set((state) => {
           const existing = state.lines.find(
@@ -60,9 +64,15 @@ export const useCartStore = create<CartState>()(
         })),
       clear: () => set({ lines: [] }),
       setActiveAccount: (id) => set({ activeAccountId: id }),
+      openDrawer: () => set({ drawerOpen: true }),
+      closeDrawer: () => set({ drawerOpen: false }),
       totalItems: () => get().lines.reduce((sum, l) => sum + l.quantity, 0),
       totalAmount: () => get().lines.reduce((sum, l) => sum + l.quantity * l.price, 0),
     }),
-    { name: "bulk-supply-cart", skipHydration: true }
+    {
+      name: "bulk-supply-cart",
+      skipHydration: true,
+      partialize: (state) => ({ lines: state.lines, activeAccountId: state.activeAccountId }),
+    }
   )
 );

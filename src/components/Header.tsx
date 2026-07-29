@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Search, Gift, ShoppingCart, User, Store, ChevronDown, LogOut, UserCircle, ClipboardList } from "lucide-react";
+import { Search, Gift, ShoppingCart, UserCircle, Store, ChevronDown, LogOut } from "lucide-react";
 import { Logo } from "./Logo";
 import { AuthModal } from "./AuthModal";
 import { useCartStore } from "@/lib/cart-store";
@@ -23,6 +23,7 @@ export function Header() {
   const totalItems = useCartStore((s) => s.totalItems());
   const activeAccountId = useCartStore((s) => s.activeAccountId);
   const setActiveAccount = useCartStore((s) => s.setActiveAccount);
+  const openCartDrawer = useCartStore((s) => s.openDrawer);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -71,29 +72,43 @@ export function Header() {
               />
             </div>
           </form>
-          <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2 ml-auto relative" ref={menuRef}>
             <button
-              className="hidden lg:flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-brand-green transition-colors"
+              className="hidden sm:flex items-center justify-center h-9 w-9 rounded-full bg-sky-50 text-gray-500 hover:bg-sky-100 transition-colors"
               title="Rewards"
             >
               <Gift size={18} />
             </button>
 
             {status === "authenticated" && (
-              <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="hidden md:flex items-center gap-1.5 border border-gray-200 rounded-md px-3 py-1.5 text-sm font-semibold text-gray-700 hover:border-brand-green transition-colors max-w-[160px] lg:max-w-none"
+              >
+                <Store size={16} className="shrink-0" />
+                <span className="truncate">{activeAccount ? activeAccount.name.toUpperCase() : "ACCOUNT"}</span>
+              </button>
+            )}
+
+            <button
+              onClick={openCartDrawer}
+              className="relative flex items-center justify-center h-9 w-9 rounded-full text-gray-700 hover:bg-gray-100 transition-colors shrink-0"
+            >
+              <ShoppingCart size={19} />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 bg-brand-red text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                  {totalItems}
+                </span>
+              )}
+            </button>
+
+            {status === "authenticated" ? (
+              <div className="relative">
                 <button
                   onClick={() => setMenuOpen((v) => !v)}
-                  className="hidden md:flex items-center gap-1.5 border border-gray-200 rounded-full pl-3 pr-2.5 py-1.5 text-sm font-semibold text-gray-700 hover:border-brand-green hover:text-brand-green transition-colors max-w-[160px] lg:max-w-none"
+                  className="flex items-center justify-center h-9 w-9 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
                 >
-                  <Store size={16} className="shrink-0" />
-                  <span className="truncate">{activeAccount ? activeAccount.name.toUpperCase() : "ACCOUNT"}</span>
-                  <ChevronDown size={14} className="shrink-0" />
-                </button>
-                <button
-                  onClick={() => setMenuOpen((v) => !v)}
-                  className="md:hidden flex items-center justify-center h-9 w-9 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
-                >
-                  <User size={18} />
+                  <UserCircle size={20} />
                 </button>
                 {menuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg py-2 text-sm">
@@ -141,54 +156,10 @@ export function Header() {
                   </div>
                 )}
               </div>
-            )}
-
-            {status === "authenticated" && (
-              <>
-                <div className="hidden lg:block h-6 w-px bg-gray-200 mx-1" />
-                <div className="hidden lg:flex items-center gap-0.5">
-                  <Link
-                    href="/account/profile"
-                    title="Profile"
-                    className="flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-brand-green transition-colors"
-                  >
-                    <UserCircle size={18} />
-                  </Link>
-                  <Link
-                    href="/account/orders"
-                    title="My Orders"
-                    className="flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-brand-green transition-colors"
-                  >
-                    <ClipboardList size={18} />
-                  </Link>
-                  <button
-                    onClick={() => signOut({ callbackUrl: "/" })}
-                    title="Logout"
-                    className="flex items-center justify-center h-9 w-9 rounded-full text-gray-400 hover:bg-red-50 hover:text-brand-red transition-colors"
-                  >
-                    <LogOut size={18} />
-                  </button>
-                </div>
-                <div className="hidden lg:block h-6 w-px bg-gray-200 mx-1" />
-              </>
-            )}
-
-            <Link
-              href="/cart"
-              className="relative flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-brand-green/10 hover:text-brand-green transition-colors shrink-0"
-            >
-              <ShoppingCart size={18} />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-brand-red text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
-
-            {status !== "authenticated" && (
+            ) : (
               <button
                 onClick={() => setAuthOpen(true)}
-                className="bg-brand-green hover:bg-brand-green-dark text-white text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md whitespace-nowrap shrink-0 ml-1"
+                className="bg-brand-green hover:bg-brand-green-dark text-white text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md whitespace-nowrap shrink-0"
               >
                 <span className="sm:hidden">Login</span>
                 <span className="hidden sm:inline">Login / Register</span>

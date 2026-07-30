@@ -37,8 +37,10 @@ export function canSetOrderStatus(role: string | undefined, status: OrderStatus)
   return ORDER_STATUS_PERMISSIONS[role].includes(status);
 }
 
+// Admin and Cashier both manage the product catalog and stock levels;
+// only Admin manages staff accounts and approves business accounts.
 export function canManageCatalog(role: string | undefined): boolean {
-  return role === "ADMIN";
+  return role === "ADMIN" || role === "CASHIER";
 }
 
 // Admin and Cashier dispatch orders to a driver; Delivery staff receive assignments.

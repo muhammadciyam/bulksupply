@@ -22,8 +22,8 @@ import { ROLE_LABELS, type StaffRole } from "@/lib/roles";
 
 const NAV: { href: string; label: string; icon: typeof LayoutDashboard; roles: StaffRole[] }[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "CASHIER", "DELIVERY"] },
-  { href: "/admin/products", label: "Products", icon: Package, roles: ["ADMIN"] },
-  { href: "/admin/inventory", label: "Inventory", icon: Boxes, roles: ["ADMIN"] },
+  { href: "/admin/products", label: "Products", icon: Package, roles: ["ADMIN", "CASHIER"] },
+  { href: "/admin/inventory", label: "Inventory", icon: Boxes, roles: ["ADMIN", "CASHIER"] },
   { href: "/admin/orders", label: "Orders & Delivery", icon: Truck, roles: ["ADMIN", "CASHIER", "DELIVERY"] },
   { href: "/admin/accounts", label: "Customer Accounts", icon: Building2, roles: ["ADMIN"] },
   { href: "/admin/staff", label: "Staff", icon: Users, roles: ["ADMIN"] },

@@ -3,12 +3,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ProductForm } from "../ProductForm";
 import { createProduct } from "../../actions";
-import { isStaffRole } from "@/lib/roles";
+import { isStaffRole, canManageCatalog } from "@/lib/roles";
 
 export default async function NewProductPage() {
   const session = await auth();
   if (!session?.user || !isStaffRole(session.user.role)) redirect("/admin/login");
-  if (session.user.role !== "ADMIN") redirect("/admin/orders");
+  if (!canManageCatalog(session.user.role)) redirect("/admin/orders");
 
   const categories = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
 

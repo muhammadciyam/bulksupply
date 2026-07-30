@@ -4,12 +4,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Plus } from "lucide-react";
 import { formatMVR, STOCK_BADGE } from "@/lib/format";
-import { isStaffRole } from "@/lib/roles";
+import { isStaffRole, canManageCatalog } from "@/lib/roles";
 
 export default async function AdminProductsPage() {
   const session = await auth();
   if (!session?.user || !isStaffRole(session.user.role)) redirect("/admin/login");
-  if (session.user.role !== "ADMIN") redirect("/admin/orders");
+  if (!canManageCatalog(session.user.role)) redirect("/admin/orders");
 
   const products = await prisma.product.findMany({
     include: { category: true, units: true, inventory: true },

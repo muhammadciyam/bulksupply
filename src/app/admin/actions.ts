@@ -6,11 +6,19 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { StockStatus, OrderStatus, Role, AccountStatus } from "@prisma/client";
-import { isStaffRole, canSetOrderStatus, canAssignDelivery, ROLE_LABELS, type StaffRole } from "@/lib/roles";
+import { isStaffRole, canSetOrderStatus, canAssignDelivery, canManageCatalog, ROLE_LABELS, type StaffRole } from "@/lib/roles";
 
 async function requireAdmin() {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") {
+    redirect("/admin/login");
+  }
+  return session;
+}
+
+async function requireCatalogManager() {
+  const session = await auth();
+  if (!session?.user || !canManageCatalog(session.user.role)) {
     redirect("/admin/login");
   }
   return session;
@@ -33,7 +41,7 @@ function slugify(s: string) {
 }
 
 export async function createProduct(formData: FormData) {
-  await requireAdmin();
+  await requireCatalogManager();
 
   const name = String(formData.get("name") ?? "").trim();
   const sku = String(formData.get("sku") ?? "").trim();
@@ -77,7 +85,7 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(productId: string, formData: FormData) {
-  await requireAdmin();
+  await requireCatalogManager();
 
   const name = String(formData.get("name") ?? "").trim();
   const categoryId = String(formData.get("categoryId") ?? "");
@@ -118,7 +126,7 @@ export async function updateProduct(productId: string, formData: FormData) {
 }
 
 export async function deleteProduct(productId: string) {
-  await requireAdmin();
+  await requireCatalogManager();
   await prisma.product.delete({ where: { id: productId } });
   revalidatePath("/admin/products");
   revalidatePath("/admin/inventory");
@@ -127,7 +135,7 @@ export async function deleteProduct(productId: string) {
 }
 
 export async function adjustInventory(inventoryItemId: string, change: number, reason: string) {
-  await requireAdmin();
+  await requireCatalogManager();
   const item = await prisma.inventoryItem.findUnique({ where: { id: inventoryItemId } });
   if (!item) return;
 
@@ -146,7 +154,7 @@ export async function adjustInventory(inventoryItemId: string, change: number, r
 }
 
 export async function setInventoryThreshold(inventoryItemId: string, threshold: number) {
-  await requireAdmin();
+  await requireCatalogManager();
   await prisma.inventoryItem.update({
     where: { id: inventoryItemId },
     data: { lowStockThreshold: threshold },
@@ -243,7 +251,7 @@ export async function upsertDelivery(orderId: string, formData: FormData) {
 }
 
 export async function createCategory(formData: FormData) {
-  await requireAdmin();
+  await requireCatalogManager();
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
   await prisma.category.create({ data: { name, slug: slugify(name) } });

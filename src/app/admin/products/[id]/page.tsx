@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ProductForm } from "../ProductForm";
 import { updateProduct, deleteProduct } from "../../actions";
 import { DeleteButton } from "./DeleteButton";
-import { isStaffRole } from "@/lib/roles";
+import { isStaffRole, canManageCatalog } from "@/lib/roles";
 
 export default async function EditProductPage({
   params,
@@ -13,7 +13,7 @@ export default async function EditProductPage({
 }) {
   const session = await auth();
   if (!session?.user || !isStaffRole(session.user.role)) redirect("/admin/login");
-  if (session.user.role !== "ADMIN") redirect("/admin/orders");
+  if (!canManageCatalog(session.user.role)) redirect("/admin/orders");
 
   const { id } = await params;
   const [product, categories] = await Promise.all([

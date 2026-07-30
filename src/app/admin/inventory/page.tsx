@@ -2,12 +2,12 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { InventoryTable } from "./InventoryTable";
-import { isStaffRole } from "@/lib/roles";
+import { isStaffRole, canManageCatalog } from "@/lib/roles";
 
 export default async function InventoryPage() {
   const session = await auth();
   if (!session?.user || !isStaffRole(session.user.role)) redirect("/admin/login");
-  if (session.user.role !== "ADMIN") redirect("/admin/orders");
+  if (!canManageCatalog(session.user.role)) redirect("/admin/orders");
 
   const items = await prisma.inventoryItem.findMany({
     include: { product: { include: { category: true } } },

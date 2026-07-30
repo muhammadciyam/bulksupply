@@ -219,6 +219,13 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   if (!canSetOrderStatus(session.user.role, status)) {
     throw new Error("You do not have permission to set this order status");
   }
+
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+  if (!order) throw new Error("Order not found");
+  if (order.status === "COMPLETE" || order.status === "CANCELLED") {
+    throw new Error("This order is already finalized and its status can no longer be changed");
+  }
+
   const role = session.user.role as StaffRole;
   const changedBy = `${session.user.name} (${ROLE_LABELS[role]})`;
 

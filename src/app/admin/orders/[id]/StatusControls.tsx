@@ -19,10 +19,12 @@ export function StatusControls({
   const [error, setError] = useState("");
   const stepIndex = ORDER_STEPS.findIndex((s) => s.key === currentStatus);
   const isCancelled = currentStatus === "CANCELLED";
-  const canCancel = allowedStatuses.includes("CANCELLED" as OrderStatus);
+  const isComplete = currentStatus === "COMPLETE";
+  const isFinalized = isCancelled || isComplete;
+  const canCancel = allowedStatuses.includes("CANCELLED" as OrderStatus) && !isFinalized;
 
   function setStatus(status: OrderStatus) {
-    if (!allowedStatuses.includes(status)) return;
+    if (!allowedStatuses.includes(status) || isFinalized) return;
     setError("");
     startTransition(async () => {
       try {
@@ -44,17 +46,19 @@ export function StatusControls({
                 <div key={step.key} className="flex items-center flex-1 last:flex-none">
                   <button
                     type="button"
-                    disabled={pending || !allowed}
+                    disabled={pending || !allowed || isComplete}
                     onClick={() => setStatus(step.key as OrderStatus)}
                     className={`flex flex-col items-center gap-1 group ${
-                      allowed ? "" : "cursor-not-allowed opacity-60"
+                      allowed && !isComplete ? "" : "cursor-not-allowed opacity-60"
                     }`}
                     title={
-                      allowed
-                        ? `Mark as ${step.label}`
-                        : step.key === "ORDER_INVOICED"
-                          ? "Set automatically when an invoice is generated"
-                          : `${step.label} is handled by another role`
+                      isComplete
+                        ? "This order is complete and can no longer be changed"
+                        : allowed
+                          ? `Mark as ${step.label}`
+                          : step.key === "ORDER_INVOICED"
+                            ? "Set automatically when an invoice is generated"
+                            : `${step.label} is handled by another role`
                     }
                   >
                     <div
@@ -77,19 +81,18 @@ export function StatusControls({
       )}
       {error && <p className="text-xs text-brand-red">{error}</p>}
       <div className="flex items-center gap-3">
-        <p className="text-xs text-gray-400">Click a step to update order status.</p>
-        {!isCancelled ? (
-          canCancel && (
-            <button
-              onClick={() => setStatus("CANCELLED" as OrderStatus)}
-              disabled={pending}
-              className="text-xs text-brand-red font-medium ml-auto"
-            >
-              Cancel Order
-            </button>
-          )
-        ) : (
-          <span className="text-xs text-brand-red font-semibold ml-auto">This order is cancelled</span>
+        <p className="text-xs text-gray-400">
+          {isComplete ? "This order is complete and can no longer be changed." : "Click a step to update order status."}
+        </p>
+        {isCancelled && <span className="text-xs text-brand-red font-semibold ml-auto">This order is cancelled</span>}
+        {canCancel && (
+          <button
+            onClick={() => setStatus("CANCELLED" as OrderStatus)}
+            disabled={pending}
+            className="text-xs text-brand-red font-medium ml-auto"
+          >
+            Cancel Order
+          </button>
         )}
       </div>
     </div>

@@ -1099,3 +1099,238 @@
  GET /api/accounts 200 in 36ms (next.js: 10ms, application-code: 26ms)
  GET /api/accounts 200 in 45ms (next.js: 8ms, application-code: 38ms)
  GET /account/profile 200 in 91ms (next.js: 8ms, proxy.ts: 18ms, application-code: 66ms)
+ GET /account/orders 200 in 119ms (next.js: 13ms, proxy.ts: 18ms, application-code: 88ms)
+ GET /api/accounts 200 in 48ms (next.js: 7ms, application-code: 41ms)
+ GET /api/accounts 200 in 31ms (next.js: 9ms, application-code: 23ms)
+ GET /account/accounts 200 in 100ms (next.js: 10ms, proxy.ts: 14ms, application-code: 75ms)
+ GET /api/accounts 200 in 58ms (next.js: 7ms, application-code: 50ms)
+ GET /api/accounts 200 in 73ms (next.js: 6ms, application-code: 67ms)
+ GET / 200 in 67ms (next.js: 9ms, application-code: 58ms)
+ GET /api/accounts 200 in 45ms (next.js: 12ms, application-code: 33ms)
+ GET /api/accounts 200 in 39ms (next.js: 5ms, application-code: 33ms)
+ GET /?category=coffee-and-instants 200 in 82ms (next.js: 8ms, application-code: 74ms)
+ GET /api/admin/notifications 200 in 60ms (next.js: 11ms, application-code: 49ms)
+ GET /api/admin/notifications 200 in 80ms (next.js: 12ms, application-code: 68ms)
+ GET /api/admin/notifications 200 in 42ms (next.js: 13ms, application-code: 29ms)
+ GET /api/admin/notifications 200 in 27ms (next.js: 9ms, application-code: 17ms)
+ GET /api/admin/notifications 200 in 64ms (next.js: 22ms, application-code: 42ms)
+ GET /api/auth/session 200 in 69ms (next.js: 37ms, application-code: 32ms)
+ GET /api/auth/session 200 in 21ms (next.js: 5ms, application-code: 15ms)
+ GET /?category=coffee-and-instants 200 in 237ms (next.js: 15ms, application-code: 222ms)
+ GET /api/auth/session 200 in 41ms (next.js: 19ms, application-code: 22ms)
+ GET /api/auth/session 200 in 185ms (next.js: 22ms, application-code: 163ms)
+ GET /api/accounts 200 in 214ms (next.js: 8ms, application-code: 207ms)
+ GET /?category=coffee-and-instants 200 in 468ms (next.js: 17ms, application-code: 451ms)
+ GET /api/auth/session 200 in 176ms (next.js: 37ms, application-code: 139ms)
+ GET /api/auth/session 200 in 60ms (next.js: 9ms, application-code: 51ms)
+ GET /api/accounts 200 in 53ms (next.js: 8ms, application-code: 46ms)
+ GET /api/auth/session 200 in 64ms (next.js: 16ms, application-code: 48ms)
+ GET /api/admin/notifications 200 in 92ms (next.js: 9ms, application-code: 83ms)
+ GET /api/auth/session 200 in 26ms (next.js: 7ms, application-code: 19ms)
+ GET /admin/orders/cms7fz9ik0033vq9c5enogf5c 200 in 523ms (next.js: 30ms, proxy.ts: 33ms, application-code: 461ms)
+ GET /api/admin/notifications 200 in 338ms (next.js: 15ms, application-code: 322ms)
+ GET /api/auth/session 200 in 212ms (next.js: 33ms, application-code: 179ms)
+ GET /api/admin/notifications 200 in 172ms (next.js: 71ms, application-code: 100ms)
+ GET /api/auth/session 200 in 83ms (next.js: 19ms, application-code: 64ms)
+ GET /api/auth/session 200 in 59ms (next.js: 16ms, application-code: 44ms)
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <LoadingBoundary name="cms7fz9ik0..." loading={null}>
+      <HTTPAccessFallbackBoundary notFound={undefined} forbidden={undefined} unauthorized={undefined}>
+        <RedirectBoundary>
+          <RedirectErrorBoundary router={{...}}>
+            <InnerLayoutRouter url="/admin/ord..." tree={[...]} params={{id:"cms7fz..."}} cacheNode={{rsc:{...}, ...}} ...>
+              <SegmentViewNode type="page" pagePath="admin/orde...">
+                <SegmentTrieNode>
+                <AdminOrderDetailPage>
+                  <div className="space-y-6 ...">
+                    <div>
+                    <div>
+                    <div>
+                    <div className="bg-white b...">
+                      <h2>
+                      <PaymentPanel orderId="cms7fz9ik0..." slip={{fileName:"...", ...}} invoice={{...}} canVerify={true} ...>
+                        <div className="space-y-6">
+                          <div>
+                            <h3>
+                            <div className="space-y-3">
+                              <div>
+                              <p className="text-xs te...">
++                               {" on 30/07/2026, 16:43:47"}
+-                               {" on 7/30/2026, 4:43:47 PM"}
+                          ...
+                    ...
+              ...
+            ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at p (<anonymous>)
+    at PaymentPanel (src/app/admin/orders/[id]/PaymentPanel.tsx:115:15)
+    at AdminOrderDetailPage (src\app\admin\orders\[id]\page.tsx:83:11)
+  113 |             )}
+  114 |             {slip.status === "VERIFIED" && slip.verifiedBy && (
+> 115 |               <p className="text-xs text-gray-400">
+      |               ^
+  116 |                 Verified by {slip.verifiedBy}
+  117 |                 {slip.verifiedAt ? ` on ${new Date(slip.verifiedAt).toLocaleString()}` : ""}
+  118 |               </p>
+ GET /api/auth/session 200 in 66ms (next.js: 8ms, application-code: 58ms)
+ GET /admin/orders/cms7fz9ik0033vq9c5enogf5c 200 in 535ms (next.js: 34ms, proxy.ts: 24ms, application-code: 476ms)
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <LoadingBoundary name="cms7fz9ik0..." loading={null}>
+      <HTTPAccessFallbackBoundary notFound={undefined} forbidden={undefined} unauthorized={undefined}>
+        <RedirectBoundary>
+          <RedirectErrorBoundary router={{...}}>
+            <InnerLayoutRouter url="/admin/ord..." tree={[...]} params={{id:"cms7fz..."}} cacheNode={{rsc:{...}, ...}} ...>
+              <SegmentViewNode type="page" pagePath="admin/orde...">
+                <SegmentTrieNode>
+                <AdminOrderDetailPage>
+                  <div className="space-y-6 ...">
+                    <div>
+                    <div>
+                    <div>
+                    <div className="bg-white b...">
+                      <h2>
+                      <PaymentPanel orderId="cms7fz9ik0..." slip={{fileName:"...", ...}} invoice={{...}} canVerify={true} ...>
+                        <div className="space-y-6">
+                          <div>
+                            <h3>
+                            <div className="space-y-3">
+                              <div>
+                              <p className="text-xs te...">
++                               {" on 30/07/2026, 16:43:47"}
+-                               {" on 7/30/2026, 4:43:47 PM"}
+                          ...
+                    ...
+              ...
+            ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at p (<anonymous>)
+    at PaymentPanel (src/app/admin/orders/[id]/PaymentPanel.tsx:115:15)
+    at AdminOrderDetailPage (src\app\admin\orders\[id]\page.tsx:83:11)
+  113 |             )}
+  114 |             {slip.status === "VERIFIED" && slip.verifiedBy && (
+> 115 |               <p className="text-xs text-gray-400">
+      |               ^
+  116 |                 Verified by {slip.verifiedBy}
+  117 |                 {slip.verifiedAt ? ` on ${new Date(slip.verifiedAt).toLocaleString()}` : ""}
+  118 |               </p>
+ GET /api/admin/notifications 200 in 172ms (next.js: 33ms, application-code: 139ms)
+ GET /api/auth/session 200 in 108ms (next.js: 26ms, application-code: 82ms)
+ GET /api/admin/notifications 200 in 92ms (next.js: 11ms, application-code: 80ms)
+ GET /api/auth/session 200 in 77ms (next.js: 8ms, application-code: 69ms)
+ GET /api/auth/session 200 in 52ms (next.js: 21ms, application-code: 30ms)
+ GET /api/auth/session 200 in 37ms (next.js: 9ms, application-code: 28ms)
+ GET /admin/orders/cms7fz9ik0033vq9c5enogf5c 200 in 333ms (next.js: 22ms, proxy.ts: 29ms, application-code: 282ms)
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <LoadingBoundary name="cms7fz9ik0..." loading={null}>
+      <HTTPAccessFallbackBoundary notFound={undefined} forbidden={undefined} unauthorized={undefined}>
+        <RedirectBoundary>
+          <RedirectErrorBoundary router={{...}}>
+            <InnerLayoutRouter url="/admin/ord..." tree={[...]} params={{id:"cms7fz..."}} cacheNode={{rsc:{...}, ...}} ...>
+              <SegmentViewNode type="page" pagePath="admin/orde...">
+                <SegmentTrieNode>
+                <AdminOrderDetailPage>
+                  <div className="space-y-6 ...">
+                    <div>
+                    <div>
+                    <div>
+                    <div className="bg-white b...">
+                      <h2>
+                      <PaymentPanel orderId="cms7fz9ik0..." slip={{fileName:"...", ...}} invoice={{...}} canVerify={true} ...>
+                        <div className="space-y-6">
+                          <div>
+                            <h3>
+                            <div className="space-y-3">
+                              <div>
+                              <p className="text-xs te...">
++                               {" on 30/07/2026, 16:43:47"}
+-                               {" on 7/30/2026, 4:43:47 PM"}
+                          ...
+                    ...
+              ...
+            ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at p (<anonymous>)
+    at PaymentPanel (src/app/admin/orders/[id]/PaymentPanel.tsx:115:15)
+    at AdminOrderDetailPage (src\app\admin\orders\[id]\page.tsx:83:11)
+  113 |             )}
+  114 |             {slip.status === "VERIFIED" && slip.verifiedBy && (
+> 115 |               <p className="text-xs text-gray-400">
+      |               ^
+  116 |                 Verified by {slip.verifiedBy}
+  117 |                 {slip.verifiedAt ? ` on ${new Date(slip.verifiedAt).toLocaleString()}` : ""}
+  118 |               </p>
+ GET /api/admin/notifications 200 in 255ms (next.js: 12ms, application-code: 243ms)
+ GET /api/auth/session 200 in 147ms (next.js: 44ms, application-code: 103ms)
+ GET /api/admin/notifications 200 in 305ms (next.js: 39ms, application-code: 265ms)
+ GET /api/auth/session 200 in 203ms (next.js: 24ms, application-code: 179ms)
+ GET /api/auth/session 200 in 48ms (next.js: 11ms, application-code: 37ms)
+ GET /api/auth/session 200 in 34ms (next.js: 7ms, application-code: 27ms)
+ POST /api/admin/notifications/cms7g39q3003dvq9c0252d43d/read 200 in 50ms (next.js: 14ms, application-code: 36ms)
+ GET /admin/orders/cms7fz9ik0033vq9c5enogf5c 200 in 91ms (next.js: 25ms, proxy.ts: 24ms, application-code: 42ms)
+ GET /admin/orders/cms7fz9ik0033vq9c5enogf5c 200 in 219ms (next.js: 13ms, proxy.ts: 30ms, application-code: 176ms)
+ GET / 200 in 84ms (next.js: 7ms, application-code: 77ms)
+ GET /api/accounts 200 in 87ms (next.js: 18ms, application-code: 69ms)
+ GET /api/accounts 200 in 78ms (next.js: 15ms, application-code: 62ms)
+ GET / 200 in 463ms (next.js: 15ms, application-code: 449ms)
+ GET /api/auth/session 200 in 53ms (next.js: 19ms, application-code: 34ms)
+ GET /api/accounts 200 in 53ms (next.js: 5ms, application-code: 48ms)
+ GET /api/auth/session 200 in 43ms (next.js: 5ms, application-code: 38ms)
+ GET / 200 in 292ms (next.js: 25ms, application-code: 267ms)
+ GET /api/auth/session 200 in 47ms (next.js: 17ms, application-code: 30ms)
+ GET /api/auth/session 200 in 65ms (next.js: 6ms, application-code: 59ms)
+ GET /api/accounts 200 in 80ms (next.js: 28ms, application-code: 52ms)
+ GET / 200 in 21ms (next.js: 8ms, application-code: 13ms)
+ GET / 200 in 72ms (next.js: 6ms, application-code: 65ms)
+ GET / 200 in 22ms (next.js: 9ms, application-code: 14ms)
+ GET / 200 in 86ms (next.js: 22ms, application-code: 64ms)
+ GET / 200 in 203ms (next.js: 21ms, application-code: 182ms)
+ GET /api/auth/session 200 in 51ms (next.js: 21ms, application-code: 29ms)
+ GET /api/auth/session 200 in 78ms (next.js: 9ms, application-code: 69ms)
+ GET /api/accounts 200 in 69ms (next.js: 6ms, application-code: 63ms)
+ GET / 200 in 368ms (next.js: 21ms, application-code: 347ms)
+ GET /api/auth/session 200 in 41ms (next.js: 15ms, application-code: 26ms)
+ GET /api/auth/session 200 in 33ms (next.js: 4ms, application-code: 28ms)
+ GET /api/accounts 200 in 53ms (next.js: 5ms, application-code: 48ms)
+ GET / 200 in 433ms (next.js: 27ms, application-code: 406ms)
+ GET /api/auth/session 200 in 43ms (next.js: 14ms, application-code: 29ms)
+ GET /api/auth/session 200 in 128ms (next.js: 10ms, application-code: 118ms)
+ GET /api/accounts 200 in 109ms (next.js: 16ms, application-code: 94ms)

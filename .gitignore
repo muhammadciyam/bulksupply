@@ -45,3 +45,6 @@ next-env.d.ts
 # uploaded files (payment slips, product images, etc.) — not for source control
 /uploads
 /public/uploads
+
+.vercel
+.env*

@@ -15,7 +15,12 @@ export default async function AdminProductsPage() {
 
   const [products, categories] = await Promise.all([
     prisma.product.findMany({
-      include: { category: true, units: true, inventory: true },
+      include: {
+        category: true,
+        units: true,
+        inventory: true,
+        images: { orderBy: { sortOrder: "asc" }, take: 1 },
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.category.findMany({
@@ -60,8 +65,8 @@ export default async function AdminProductsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="relative h-10 w-10 rounded bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shrink-0">
-                        {p.imageUrl ? (
-                          <Image src={p.imageUrl} alt="" fill className="object-cover" sizes="40px" />
+                        {p.images[0] ? (
+                          <Image src={p.images[0].imageUrl} alt="" fill className="object-cover" sizes="40px" />
                         ) : (
                           <Package className="text-gray-300" size={18} strokeWidth={1.2} />
                         )}

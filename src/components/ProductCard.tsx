@@ -5,13 +5,14 @@ import Image from "next/image";
 import { ShoppingCart, Package } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { formatMVR, STOCK_BADGE } from "@/lib/format";
+import { ImageLightbox } from "./ImageLightbox";
 
 export type ProductCardData = {
   id: string;
   name: string;
   sku: string;
   stockStatus: string;
-  imageUrl?: string | null;
+  images: string[];
   units: { label: string; packSize: string; price: number }[];
 };
 
@@ -19,6 +20,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
   const [unitIndex, setUnitIndex] = useState(0);
   const addLine = useCartStore((s) => s.addLine);
   const [added, setAdded] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const unit = product.units[unitIndex] ?? product.units[0];
   const badge = STOCK_BADGE[product.stockStatus];
 
@@ -40,14 +42,21 @@ export function ProductCard({ product }: { product: ProductCardData }) {
   return (
     <div className="bg-white border border-gray-200 rounded-md flex flex-col overflow-hidden hover:shadow-md transition-shadow">
       <div className="relative aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
-        {product.imageUrl ? (
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 50vw, 20vw"
-          />
+        {product.images.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            aria-label={`View photos of ${product.name}`}
+            className="absolute inset-0 cursor-zoom-in"
+          >
+            <Image
+              src={product.images[0]}
+              alt={product.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 50vw, 20vw"
+            />
+          </button>
         ) : (
           <Package className="text-gray-300" size={48} strokeWidth={1.2} />
         )}
@@ -59,6 +68,9 @@ export function ProductCard({ product }: { product: ProductCardData }) {
           </span>
         )}
       </div>
+      {lightboxOpen && (
+        <ImageLightbox images={product.images} alt={product.name} onClose={() => setLightboxOpen(false)} />
+      )}
       <div className="p-2.5 flex flex-col grow gap-1.5">
         <p className="text-[11px] font-medium text-gray-800 leading-tight line-clamp-2 uppercase min-h-[2rem]">
           {product.name}

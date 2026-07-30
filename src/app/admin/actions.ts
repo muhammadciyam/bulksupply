@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { saveUploadedImage, removeUploadedImage } from "@/lib/image-upload";
+import { saveUploadedImage, saveImageFile, saveImageFromUrl, removeUploadedImage } from "@/lib/image-upload";
 import { StockStatus, OrderStatus, Role, AccountStatus, Prisma } from "@prisma/client";
 import {
   isStaffRole,
@@ -66,6 +66,39 @@ function slugify(s: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+// Adds every newly selected file (multi-select) and/or pasted URL as new
+// ProductImage rows — this only ever adds to a product's gallery, existing
+// images are removed individually via removeProductImage.
+async function addProductImages(productId: string, formData: FormData) {
+  const files = formData.getAll("imageFile").filter((f): f is File => f instanceof File && f.size > 0);
+  const url = String(formData.get("imageUrl") ?? "").trim();
+
+  const last = await prisma.productImage.findFirst({ where: { productId }, orderBy: { sortOrder: "desc" } });
+  let nextOrder = (last?.sortOrder ?? -1) + 1;
+
+  for (const file of files) {
+    const row = await prisma.productImage.create({ data: { productId, imageUrl: "", sortOrder: nextOrder++ } });
+    try {
+      const imageUrl = await saveImageFile("products", row.id, file);
+      await prisma.productImage.update({ where: { id: row.id }, data: { imageUrl } });
+    } catch (err) {
+      await prisma.productImage.delete({ where: { id: row.id } }).catch(() => {});
+      throw err;
+    }
+  }
+
+  if (url) {
+    const row = await prisma.productImage.create({ data: { productId, imageUrl: "", sortOrder: nextOrder++ } });
+    try {
+      const imageUrl = await saveImageFromUrl("products", row.id, url);
+      await prisma.productImage.update({ where: { id: row.id }, data: { imageUrl } });
+    } catch (err) {
+      await prisma.productImage.delete({ where: { id: row.id } }).catch(() => {});
+      throw err;
+    }
+  }
+}
+
 export async function createProduct(formData: FormData) {
   await requireCatalogManager();
 
@@ -106,12 +139,9 @@ export async function createProduct(formData: FormData) {
 
   let imageError: string | null = null;
   try {
-    const imageUrl = await saveUploadedImage("products", product.id, formData);
-    if (imageUrl) {
-      await prisma.product.update({ where: { id: product.id }, data: { imageUrl } });
-    }
+    await addProductImages(product.id, formData);
   } catch (err) {
-    imageError = err instanceof Error ? err.message : "Could not save the product image";
+    imageError = err instanceof Error ? err.message : "Could not save one or more product images";
   }
 
   revalidatePath("/admin/products");
@@ -137,13 +167,9 @@ export async function updateProduct(productId: string, formData: FormData) {
 
   let imageError: string | null = null;
   try {
-    const current = await prisma.product.findUnique({ where: { id: productId }, select: { imageUrl: true } });
-    const imageUrl = await saveUploadedImage("products", productId, formData, current?.imageUrl);
-    if (imageUrl) {
-      await prisma.product.update({ where: { id: productId }, data: { imageUrl } });
-    }
+    await addProductImages(productId, formData);
   } catch (err) {
-    imageError = err instanceof Error ? err.message : "Could not save the product image";
+    imageError = err instanceof Error ? err.message : "Could not save one or more product images";
   }
 
   const unitIds = formData.getAll("unitId") as string[];
@@ -184,6 +210,17 @@ export async function deleteProduct(productId: string) {
   revalidatePath("/admin/inventory");
   revalidatePath("/");
   redirect("/admin/products");
+}
+
+export async function removeProductImage(imageId: string) {
+  await requireCatalogManager();
+  const row = await prisma.productImage.findUnique({ where: { id: imageId } });
+  if (!row) return;
+  await removeUploadedImage(row.imageUrl);
+  await prisma.productImage.delete({ where: { id: imageId } });
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${row.productId}`);
+  revalidatePath("/");
 }
 
 export async function adjustInventory(inventoryItemId: string, change: number, reason: string) {

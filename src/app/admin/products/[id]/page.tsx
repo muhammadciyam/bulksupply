@@ -20,7 +20,10 @@ export default async function EditProductPage({
   const { id } = await params;
   const { imageError } = await searchParams;
   const [product, categories] = await Promise.all([
-    prisma.product.findUnique({ where: { id }, include: { units: true } }),
+    prisma.product.findUnique({
+      where: { id },
+      include: { units: true, images: { orderBy: { sortOrder: "asc" } } },
+    }),
     prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
   ]);
 
@@ -49,7 +52,7 @@ export default async function EditProductPage({
           categoryId: product.categoryId,
           description: product.description ?? "",
           stockStatus: product.stockStatus,
-          imageUrl: product.imageUrl,
+          images: product.images.map((img) => ({ id: img.id, imageUrl: img.imageUrl })),
           units: product.units.map((u) => ({
             id: u.id,
             label: u.label,

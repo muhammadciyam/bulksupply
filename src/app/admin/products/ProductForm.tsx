@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Plus, Trash2, X } from "lucide-react";
+import { removeProductImage } from "../actions";
 
 type Category = { id: string; name: string };
 type UnitRow = { id?: string; label: string; packSize: string; price: string };
+type ImageRow = { id: string; imageUrl: string };
 
 type Props = {
   categories: Category[];
@@ -19,11 +21,87 @@ type Props = {
     units: UnitRow[];
     quantityOnHand?: number;
     lowStockThreshold?: number;
-    imageUrl?: string | null;
+    images?: ImageRow[];
   };
   showInventoryFields?: boolean;
   showSku?: boolean;
 };
+
+function ProductImages({ initialImages }: { initialImages: ImageRow[] }) {
+  const [images, setImages] = useState(initialImages);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [removing, startTransition] = useTransition();
+  const [error, setError] = useState("");
+
+  function handleRemove(id: string) {
+    setError("");
+    startTransition(async () => {
+      try {
+        await removeProductImage(id);
+        setImages((imgs) => imgs.filter((i) => i.id !== id));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      }
+    });
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
+      <h3 className="text-sm font-semibold text-gray-700">Product Images</h3>
+      {images.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {images.map((img) => (
+            <div key={img.id} className="relative h-20 w-20 rounded-md overflow-hidden border border-gray-200 shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img.imageUrl} alt="" className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => handleRemove(img.id)}
+                disabled={removing}
+                aria-label="Remove image"
+                className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-brand-red disabled:opacity-50"
+              >
+                <X size={11} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-gray-400">No images yet.</p>
+      )}
+      {error && <p className="text-xs text-brand-red">{error}</p>}
+
+      <div className="space-y-2 pt-1">
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Add photos from your computer</label>
+          <input
+            type="file"
+            name="imageFile"
+            multiple
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => setPendingCount(e.target.files?.length ?? 0)}
+            className="w-full text-xs"
+          />
+          {pendingCount > 0 && (
+            <p className="text-[11px] text-gray-400 mt-1">
+              {pendingCount} file{pendingCount === 1 ? "" : "s"} selected — added when you save.
+            </p>
+          )}
+        </div>
+        <p className="text-[11px] text-gray-400">or paste an image URL below to fetch it automatically</p>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Image URL</label>
+          <input
+            type="url"
+            name="imageUrl"
+            placeholder="https://example.com/product.jpg"
+            className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 text-sm"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function ProductForm({
   categories,
@@ -36,51 +114,10 @@ export function ProductForm({
   const [units, setUnits] = useState<UnitRow[]>(
     initial?.units?.length ? initial.units : [{ label: "Carton", packSize: "", price: "" }]
   );
-  const [preview, setPreview] = useState<string | null>(initial?.imageUrl ?? null);
 
   return (
     <form action={action} className="space-y-6 max-w-2xl" encType="multipart/form-data">
-      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-        <h3 className="text-sm font-semibold text-gray-700">Product Image</h3>
-        <div className="flex items-start gap-4">
-          <div className="h-24 w-24 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
-            {preview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={preview} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-[10px] text-gray-400 text-center px-2">No image</span>
-            )}
-          </div>
-          <div className="flex-1 space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Upload from your computer</label>
-              <input
-                type="file"
-                name="imageFile"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) setPreview(URL.createObjectURL(file));
-                }}
-                className="w-full text-xs"
-              />
-            </div>
-            <p className="text-[11px] text-gray-400">or paste an image URL below to fetch it automatically</p>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Image URL</label>
-              <input
-                type="url"
-                name="imageUrl"
-                placeholder="https://example.com/product.jpg"
-                onChange={(e) => {
-                  if (e.target.value) setPreview(e.target.value);
-                }}
-                className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 text-sm"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <ProductImages initialImages={initial?.images ?? []} />
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

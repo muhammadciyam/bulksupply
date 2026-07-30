@@ -32,28 +32,27 @@ async function persist(subdir: string, id: string, buffer: Buffer, ext: string, 
   return newUrl;
 }
 
-// Saves an image from either an uploaded file ("imageFile") or, if no file was
-// given, a pasted image URL ("imageUrl") that gets downloaded server-side.
-// Stored at public/uploads/<subdir>/<id>.<ext>. Returns the new local image
-// URL, or undefined if neither field was provided.
-export async function saveUploadedImage(
+// Saves an uploaded File. Stored at public/uploads/<subdir>/<id>.<ext>.
+export async function saveImageFile(
   subdir: string,
   id: string,
-  formData: FormData,
+  file: File,
   currentImageUrl?: string | null
-): Promise<string | undefined> {
-  const file = formData.get("imageFile");
-  if (file instanceof File && file.size > 0) {
-    if (file.size > MAX_SIZE) throw new Error("Image must be 5MB or smaller");
-    const ext = ALLOWED_TYPES[file.type];
-    if (!ext) throw new Error("Only JPG, PNG, or WEBP images are allowed");
-    const buffer = Buffer.from(await file.arrayBuffer());
-    return persist(subdir, id, buffer, ext, currentImageUrl);
-  }
+): Promise<string> {
+  if (file.size > MAX_SIZE) throw new Error("Image must be 5MB or smaller");
+  const ext = ALLOWED_TYPES[file.type];
+  if (!ext) throw new Error("Only JPG, PNG, or WEBP images are allowed");
+  const buffer = Buffer.from(await file.arrayBuffer());
+  return persist(subdir, id, buffer, ext, currentImageUrl);
+}
 
-  const url = String(formData.get("imageUrl") ?? "").trim();
-  if (!url) return undefined;
-
+// Downloads an image from a pasted URL server-side and saves it the same way.
+export async function saveImageFromUrl(
+  subdir: string,
+  id: string,
+  url: string,
+  currentImageUrl?: string | null
+): Promise<string> {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -83,6 +82,26 @@ export async function saveUploadedImage(
   if (buffer.byteLength > MAX_SIZE) throw new Error("Image must be 5MB or smaller");
 
   return persist(subdir, id, buffer, ext, currentImageUrl);
+}
+
+// Saves an image from either an uploaded file ("imageFile") or, if no file was
+// given, a pasted image URL ("imageUrl"). Returns the new local image URL, or
+// undefined if neither field was provided.
+export async function saveUploadedImage(
+  subdir: string,
+  id: string,
+  formData: FormData,
+  currentImageUrl?: string | null
+): Promise<string | undefined> {
+  const file = formData.get("imageFile");
+  if (file instanceof File && file.size > 0) {
+    return saveImageFile(subdir, id, file, currentImageUrl);
+  }
+
+  const url = String(formData.get("imageUrl") ?? "").trim();
+  if (!url) return undefined;
+
+  return saveImageFromUrl(subdir, id, url, currentImageUrl);
 }
 
 export async function removeUploadedImage(imageUrl: string): Promise<void> {

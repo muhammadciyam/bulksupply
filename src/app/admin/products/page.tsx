@@ -6,16 +6,23 @@ import { prisma } from "@/lib/prisma";
 import { Plus, Package } from "lucide-react";
 import { formatMVR, STOCK_BADGE } from "@/lib/format";
 import { isStaffRole, canManageCatalog } from "@/lib/roles";
+import { CategoryManager } from "./CategoryManager";
 
 export default async function AdminProductsPage() {
   const session = await auth();
   if (!session?.user || !isStaffRole(session.user.role)) redirect("/admin/login");
   if (!canManageCatalog(session.user.role)) redirect("/admin/orders");
 
-  const products = await prisma.product.findMany({
-    include: { category: true, units: true, inventory: true },
-    orderBy: { createdAt: "desc" },
-  });
+  const [products, categories] = await Promise.all([
+    prisma.product.findMany({
+      include: { category: true, units: true, inventory: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.category.findMany({
+      include: { _count: { select: { products: true } } },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -28,6 +35,10 @@ export default async function AdminProductsPage() {
           <Plus size={16} /> Add Product
         </Link>
       </div>
+
+      <CategoryManager
+        initialCategories={categories.map((c) => ({ id: c.id, name: c.name, productCount: c._count.products }))}
+      />
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
         <table className="w-full text-sm min-w-[720px]">

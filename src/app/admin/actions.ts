@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { saveUploadedImage, removeUploadedImage } from "@/lib/image-upload";
-import { StockStatus, OrderStatus, Role, AccountStatus } from "@prisma/client";
+import { StockStatus, OrderStatus, Role, AccountStatus, Prisma } from "@prisma/client";
 import {
   isStaffRole,
   canSetOrderStatus,
@@ -413,8 +413,28 @@ export async function upsertDelivery(orderId: string, formData: FormData) {
 export async function createCategory(formData: FormData) {
   await requireCatalogManager();
   const name = String(formData.get("name") ?? "").trim();
-  if (!name) return;
-  await prisma.category.create({ data: { name, slug: slugify(name) } });
+  if (!name) throw new Error("Category name is required");
+
+  try {
+    const category = await prisma.category.create({ data: { name, slug: slugify(name) } });
+    revalidatePath("/admin/products");
+    revalidatePath("/");
+    return category;
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw new Error("A category with this name already exists");
+    }
+    throw err;
+  }
+}
+
+export async function deleteCategory(categoryId: string) {
+  await requireCatalogManager();
+  const count = await prisma.product.count({ where: { categoryId } });
+  if (count > 0) {
+    throw new Error(`Cannot delete — ${count} product${count === 1 ? "" : "s"} still use this category`);
+  }
+  await prisma.category.delete({ where: { id: categoryId } });
   revalidatePath("/admin/products");
   revalidatePath("/");
 }

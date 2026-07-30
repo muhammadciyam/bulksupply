@@ -1,14 +1,23 @@
-import { PackageCheck } from "lucide-react";
 import Link from "next/link";
 
-export function Logo({ className = "" }: { className?: string }) {
+export function Logo({
+  className = "",
+  variant = "light",
+}: {
+  className?: string;
+  variant?: "light" | "dark";
+}) {
+  const primary = variant === "dark" ? "text-white" : "text-brand-navy";
+  const accent = variant === "dark" ? "text-emerald-300" : "text-brand-blue";
+  const underline = variant === "dark" ? "bg-brand-green" : "bg-brand-blue";
+
   return (
-    <Link href="/" className={`flex items-center gap-1.5 sm:gap-2 shrink-0 ${className}`}>
-      <PackageCheck className="text-brand-green w-6 h-6 sm:w-[30px] sm:h-[30px]" strokeWidth={2.2} />
-      <span className="text-base sm:text-xl font-extrabold tracking-tight whitespace-nowrap">
-        <span className="text-brand-navy">BULK</span>{" "}
-        <span className="text-brand-blue">SUPPLY</span>
+    <Link href="/" className={`inline-flex flex-col shrink-0 ${className}`}>
+      <span className="text-lg sm:text-2xl font-extrabold tracking-tighter whitespace-nowrap leading-none">
+        <span className={primary}>BULK</span>
+        <span className={accent}>SUPPLY</span>
       </span>
+      <span className={`h-[3px] mt-1 rounded-full ${underline}`} />
     </Link>
   );
 }

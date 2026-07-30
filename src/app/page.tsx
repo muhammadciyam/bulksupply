@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { Logo } from "@/components/Logo";
 import { CategorySidebar } from "@/components/CategorySidebar";
 import { BannerCarousel } from "@/components/BannerCarousel";
 import { ProductCard } from "@/components/ProductCard";
@@ -64,8 +65,9 @@ export default async function Home({
 function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white mt-8">
-      <div className="max-w-[1400px] mx-auto px-4 py-6 text-xs text-gray-400 text-center">
-        © {new Date().getFullYear()} Bulk Supply. All rights reserved.
+      <div className="max-w-[1400px] mx-auto px-4 py-6 flex flex-col items-center gap-3 text-xs text-gray-400 text-center">
+        <Logo />
+        <p>© {new Date().getFullYear()} Bulk Supply. All rights reserved.</p>
       </div>
     </footer>
   );

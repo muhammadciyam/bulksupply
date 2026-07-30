@@ -65,7 +65,7 @@ export function AdminShell({
         }`}
       >
         <div className="p-5 border-b border-white/10 flex items-center justify-between">
-          <Logo className="[&_span]:text-white [&_span:first-child]:text-white [&_span:last-child]:text-emerald-300" />
+          <Logo variant="dark" />
           <button
             onClick={() => setDrawerOpen(false)}
             className="md:hidden text-white/70 hover:text-white"

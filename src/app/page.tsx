@@ -17,17 +17,27 @@ export default async function Home({
   if (category) where.category = { slug: category };
   if (q) where.name = { contains: q };
 
-  const products = await prisma.product.findMany({
-    where,
-    include: { units: { orderBy: { isDefault: "desc" } } },
-    orderBy: { createdAt: "desc" },
-  });
+  const [products, settings] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      include: { units: { orderBy: { isDefault: "desc" } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.appSettings.findUnique({ where: { id: "singleton" } }),
+  ]);
+
+  const bannerImages = [
+    settings?.banner1ImageUrl,
+    settings?.banner2ImageUrl,
+    settings?.banner3ImageUrl,
+    settings?.banner4ImageUrl,
+  ];
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="max-w-[1400px] mx-auto w-full px-4 py-4 flex-1">
-        <BannerCarousel />
+        <BannerCarousel imageUrls={bannerImages} />
         <div className="flex flex-col md:flex-row gap-6 mt-6">
           <CategorySidebar activeSlug={category} />
           <section className="flex-1">

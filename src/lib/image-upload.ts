@@ -1,7 +1,6 @@
 import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "products");
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -19,24 +18,27 @@ function isPrivateHost(hostname: string): boolean {
   return a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254);
 }
 
-async function persist(productId: string, buffer: Buffer, ext: string, currentImageUrl?: string | null): Promise<string> {
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  const fileName = `${productId}.${ext}`;
-  const newUrl = `/uploads/products/${fileName}`;
+async function persist(subdir: string, id: string, buffer: Buffer, ext: string, currentImageUrl?: string | null): Promise<string> {
+  const uploadDir = path.join(process.cwd(), "public", "uploads", subdir);
+  await mkdir(uploadDir, { recursive: true });
+  const fileName = `${id}.${ext}`;
+  const newUrl = `/uploads/${subdir}/${fileName}`;
 
   if (currentImageUrl && currentImageUrl !== newUrl) {
     await unlink(path.join(process.cwd(), "public", currentImageUrl)).catch(() => {});
   }
 
-  await writeFile(path.join(UPLOAD_DIR, fileName), buffer);
+  await writeFile(path.join(uploadDir, fileName), buffer);
   return newUrl;
 }
 
-// Saves a product image from either an uploaded file ("imageFile") or, if no
-// file was given, a pasted image URL ("imageUrl") that gets downloaded server-side.
-// Returns the new local image URL, or undefined if neither field was provided.
-export async function saveProductImage(
-  productId: string,
+// Saves an image from either an uploaded file ("imageFile") or, if no file was
+// given, a pasted image URL ("imageUrl") that gets downloaded server-side.
+// Stored at public/uploads/<subdir>/<id>.<ext>. Returns the new local image
+// URL, or undefined if neither field was provided.
+export async function saveUploadedImage(
+  subdir: string,
+  id: string,
   formData: FormData,
   currentImageUrl?: string | null
 ): Promise<string | undefined> {
@@ -46,7 +48,7 @@ export async function saveProductImage(
     const ext = ALLOWED_TYPES[file.type];
     if (!ext) throw new Error("Only JPG, PNG, or WEBP images are allowed");
     const buffer = Buffer.from(await file.arrayBuffer());
-    return persist(productId, buffer, ext, currentImageUrl);
+    return persist(subdir, id, buffer, ext, currentImageUrl);
   }
 
   const url = String(formData.get("imageUrl") ?? "").trim();
@@ -80,5 +82,9 @@ export async function saveProductImage(
   const buffer = Buffer.from(await res.arrayBuffer());
   if (buffer.byteLength > MAX_SIZE) throw new Error("Image must be 5MB or smaller");
 
-  return persist(productId, buffer, ext, currentImageUrl);
+  return persist(subdir, id, buffer, ext, currentImageUrl);
+}
+
+export async function removeUploadedImage(imageUrl: string): Promise<void> {
+  await unlink(path.join(process.cwd(), "public", imageUrl)).catch(() => {});
 }

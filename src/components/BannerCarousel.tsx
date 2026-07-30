@@ -1,75 +1,64 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { BANNER_SLIDES } from "@/lib/banners";
 
-const slides = [
-  {
-    title: "New Season Deals",
-    subtitle: "Stock up early and save on bulk orders",
-    from: "from-emerald-600",
-    to: "to-emerald-800",
-  },
-  {
-    title: "Fresh Stock Arrivals",
-    subtitle: "Dairy, beverages & household essentials",
-    from: "from-sky-600",
-    to: "to-sky-800",
-  },
-  {
-    title: "Personal Care Restock",
-    subtitle: "Wipes, diapers & toiletries now available",
-    from: "from-rose-600",
-    to: "to-rose-800",
-  },
-  {
-    title: "Pantry & Grocery",
-    subtitle: "Canned foods, sauces and cooking essentials",
-    from: "from-amber-600",
-    to: "to-amber-800",
-  },
-];
+// Each tile plays its own distinct entrance animation every time it becomes
+// the active slide (see the per-tile `key` below, which forces a remount).
+const ANIMATIONS = ["banner-anim-fade", "banner-anim-slide-up", "banner-anim-zoom", "banner-anim-slide-side"];
 
-export function BannerCarousel() {
+export function BannerCarousel({ imageUrls = [] }: { imageUrls?: (string | null | undefined)[] }) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     const id = setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length);
+      setIndex((i) => (i + 1) % BANNER_SLIDES.length);
     }, 5000);
     return () => clearInterval(id);
   }, []);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {slides.map((s, i) => (
-        <div
-          key={s.title}
-          className={`relative h-32 md:h-44 rounded-lg overflow-hidden bg-gradient-to-br ${s.from} ${s.to} text-white p-4 flex flex-col justify-end transition-transform ${
-            i === index ? "ring-2 ring-brand-green" : ""
-          }`}
-        >
-          <p className="text-sm md:text-base font-bold leading-tight">{s.title}</p>
-          <p className="text-xs md:text-sm opacity-90 leading-tight">{s.subtitle}</p>
-        </div>
-      ))}
+      {BANNER_SLIDES.map((s, i) => {
+        const active = i === index;
+        const image = imageUrls[i];
+        return (
+          <div
+            key={`${s.slot}-${active ? "active" : "idle"}`}
+            className={`relative h-32 md:h-44 rounded-lg overflow-hidden text-white p-4 flex flex-col justify-end transition-transform ${
+              image ? "bg-gray-800" : `bg-gradient-to-br ${s.from} ${s.to}`
+            } ${active ? `ring-2 ring-brand-green ${ANIMATIONS[i]}` : ""}`}
+          >
+            {image && (
+              <>
+                <Image src={image} alt="" fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+              </>
+            )}
+            <p className="relative text-sm md:text-base font-bold leading-tight">{s.title}</p>
+            <p className="relative text-xs md:text-sm opacity-90 leading-tight">{s.subtitle}</p>
+          </div>
+        );
+      })}
       <div className="col-span-2 md:col-span-4 flex justify-center gap-1 -mt-1">
         <button
           aria-label="Previous"
-          onClick={() => setIndex((i) => (i - 1 + slides.length) % slides.length)}
+          onClick={() => setIndex((i) => (i - 1 + BANNER_SLIDES.length) % BANNER_SLIDES.length)}
           className="p-1 text-gray-400 hover:text-brand-green"
         >
           <ChevronLeft size={16} />
         </button>
-        {slides.map((_, i) => (
+        {BANNER_SLIDES.map((s, i) => (
           <span
-            key={i}
+            key={s.slot}
             className={`h-1.5 w-1.5 rounded-full ${i === index ? "bg-brand-green" : "bg-gray-300"}`}
           />
         ))}
         <button
           aria-label="Next"
-          onClick={() => setIndex((i) => (i + 1) % slides.length)}
+          onClick={() => setIndex((i) => (i + 1) % BANNER_SLIDES.length)}
           className="p-1 text-gray-400 hover:text-brand-green"
         >
           <ChevronRight size={16} />

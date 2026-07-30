@@ -42,3 +42,27 @@ body {
   background: #d1d5db;
   border-radius: 6px;
 }
+
+/* Distinct entrance animation per homepage banner tile, replayed each time it
+   becomes the active slide (see BannerCarousel's per-tile remount key). */
+@keyframes banner-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes banner-slide-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes banner-zoom {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes banner-slide-side {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.banner-anim-fade { animation: banner-fade 0.7s ease-out; }
+.banner-anim-slide-up { animation: banner-slide-up 0.7s ease-out; }
+.banner-anim-zoom { animation: banner-zoom 0.7s ease-out; }
+.banner-anim-slide-side { animation: banner-slide-side 0.7s ease-out; }

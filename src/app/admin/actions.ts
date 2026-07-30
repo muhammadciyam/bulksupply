@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { saveProductImage } from "@/lib/product-image";
+import { saveUploadedImage, removeUploadedImage } from "@/lib/image-upload";
 import { StockStatus, OrderStatus, Role, AccountStatus } from "@prisma/client";
 import {
   isStaffRole,
@@ -106,7 +106,7 @@ export async function createProduct(formData: FormData) {
 
   let imageError: string | null = null;
   try {
-    const imageUrl = await saveProductImage(product.id, formData);
+    const imageUrl = await saveUploadedImage("products", product.id, formData);
     if (imageUrl) {
       await prisma.product.update({ where: { id: product.id }, data: { imageUrl } });
     }
@@ -138,7 +138,7 @@ export async function updateProduct(productId: string, formData: FormData) {
   let imageError: string | null = null;
   try {
     const current = await prisma.product.findUnique({ where: { id: productId }, select: { imageUrl: true } });
-    const imageUrl = await saveProductImage(productId, formData, current?.imageUrl);
+    const imageUrl = await saveUploadedImage("products", productId, formData, current?.imageUrl);
     if (imageUrl) {
       await prisma.product.update({ where: { id: productId }, data: { imageUrl } });
     }
@@ -342,6 +342,52 @@ export async function updateAppSettings(paymentDeadlineDays: number) {
     create: { id: "singleton", paymentDeadlineDays },
     update: { paymentDeadlineDays },
   });
+  revalidatePath("/admin/settings");
+}
+
+const BANNER_FIELDS = {
+  1: "banner1ImageUrl",
+  2: "banner2ImageUrl",
+  3: "banner3ImageUrl",
+  4: "banner4ImageUrl",
+} as const;
+
+export async function updateBannerImage(slot: 1 | 2 | 3 | 4, formData: FormData) {
+  await requireAdmin();
+  const field = BANNER_FIELDS[slot];
+  if (!field) throw new Error("Invalid banner slot");
+
+  const settings = await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton" },
+    update: {},
+  });
+
+  const imageUrl = await saveUploadedImage("banners", `banner-${slot}`, formData, settings[field]);
+  if (!imageUrl) throw new Error("Choose a file or paste an image URL");
+
+  await prisma.appSettings.update({ where: { id: "singleton" }, data: { [field]: imageUrl } });
+  revalidatePath("/");
+  revalidatePath("/admin/settings");
+  return imageUrl;
+}
+
+export async function removeBannerImage(slot: 1 | 2 | 3 | 4) {
+  await requireAdmin();
+  const field = BANNER_FIELDS[slot];
+  if (!field) throw new Error("Invalid banner slot");
+
+  const settings = await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton" },
+    update: {},
+  });
+
+  if (settings[field]) {
+    await removeUploadedImage(settings[field]);
+    await prisma.appSettings.update({ where: { id: "singleton" }, data: { [field]: null } });
+  }
+  revalidatePath("/");
   revalidatePath("/admin/settings");
 }
 

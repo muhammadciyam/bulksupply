@@ -221,6 +221,10 @@ model Notification {
 }
 
 model AppSettings {
-  id                  String @id @default("singleton")
-  paymentDeadlineDays Int    @default(3)
+  id                  String  @id @default("singleton")
+  paymentDeadlineDays Int     @default(3)
+  banner1ImageUrl     String?
+  banner2ImageUrl     String?
+  banner3ImageUrl     String?
+  banner4ImageUrl     String?
 }

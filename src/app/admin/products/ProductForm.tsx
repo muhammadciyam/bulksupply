@@ -28,17 +28,23 @@ type Props = {
 };
 
 function ProductImages({ initialImages }: { initialImages: ImageRow[] }) {
-  const [images, setImages] = useState(initialImages);
+  // `initialImages` is re-fetched by the server after every save (new images
+  // included), so it — not local state — stays the source of truth here.
+  // Only removals need client state, since they take effect immediately
+  // without waiting for the surrounding form to be submitted.
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const [pendingCount, setPendingCount] = useState(0);
   const [removing, startTransition] = useTransition();
   const [error, setError] = useState("");
+
+  const images = initialImages.filter((img) => !removedIds.has(img.id));
 
   function handleRemove(id: string) {
     setError("");
     startTransition(async () => {
       try {
         await removeProductImage(id);
-        setImages((imgs) => imgs.filter((i) => i.id !== id));
+        setRemovedIds((ids) => new Set(ids).add(id));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
       }

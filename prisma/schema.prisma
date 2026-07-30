@@ -221,10 +221,16 @@ model Notification {
 }
 
 model AppSettings {
-  id                  String  @id @default("singleton")
-  paymentDeadlineDays Int     @default(3)
-  banner1ImageUrl     String?
-  banner2ImageUrl     String?
-  banner3ImageUrl     String?
-  banner4ImageUrl     String?
+  id                  String @id @default("singleton")
+  paymentDeadlineDays Int    @default(3)
+}
+
+model BannerImage {
+  id        String   @id @default(cuid())
+  slot      Int
+  imageUrl  String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([slot])
 }

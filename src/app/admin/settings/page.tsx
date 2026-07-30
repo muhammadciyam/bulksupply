@@ -9,18 +9,19 @@ export default async function AdminSettingsPage() {
   const session = await auth();
   if (!session?.user || session.user.role !== "ADMIN") redirect("/admin/login");
 
-  const settings = await prisma.appSettings.upsert({
-    where: { id: "singleton" },
-    create: { id: "singleton" },
-    update: {},
-  });
+  const [settings, bannerImageRows] = await Promise.all([
+    prisma.appSettings.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton" },
+      update: {},
+    }),
+    prisma.bannerImage.findMany({ orderBy: [{ slot: "asc" }, { sortOrder: "asc" }] }),
+  ]);
 
-  const bannerImages: Record<number, string | null> = {
-    1: settings.banner1ImageUrl,
-    2: settings.banner2ImageUrl,
-    3: settings.banner3ImageUrl,
-    4: settings.banner4ImageUrl,
-  };
+  const bannerImages: Record<number, { id: string; imageUrl: string }[]> = { 1: [], 2: [], 3: [], 4: [] };
+  for (const img of bannerImageRows) {
+    bannerImages[img.slot]?.push({ id: img.id, imageUrl: img.imageUrl });
+  }
 
   return (
     <div className="space-y-4 max-w-md">
@@ -37,7 +38,8 @@ export default async function AdminSettingsPage() {
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
         <h2 className="text-sm font-semibold text-gray-700 mb-1">Homepage Banners</h2>
         <p className="text-xs text-gray-500 mb-2">
-          Upload an image or paste a URL for each banner. Leave one empty to keep its default
+          Upload one or more images (or paste URLs) for each banner. With more than one, the
+          banner automatically cycles through them. Leave a banner empty to keep its default
           gradient background.
         </p>
         {BANNER_SLIDES.map((s) => (
@@ -46,7 +48,7 @@ export default async function AdminSettingsPage() {
             slot={s.slot}
             title={s.title}
             subtitle={s.subtitle}
-            initialImageUrl={bannerImages[s.slot]}
+            initialImages={bannerImages[s.slot] ?? []}
           />
         ))}
       </div>

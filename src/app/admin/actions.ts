@@ -345,48 +345,34 @@ export async function updateAppSettings(paymentDeadlineDays: number) {
   revalidatePath("/admin/settings");
 }
 
-const BANNER_FIELDS = {
-  1: "banner1ImageUrl",
-  2: "banner2ImageUrl",
-  3: "banner3ImageUrl",
-  4: "banner4ImageUrl",
-} as const;
-
-export async function updateBannerImage(slot: 1 | 2 | 3 | 4, formData: FormData) {
+export async function addBannerImage(slot: 1 | 2 | 3 | 4, formData: FormData) {
   await requireAdmin();
-  const field = BANNER_FIELDS[slot];
-  if (!field) throw new Error("Invalid banner slot");
+  if (slot < 1 || slot > 4) throw new Error("Invalid banner slot");
 
-  const settings = await prisma.appSettings.upsert({
-    where: { id: "singleton" },
-    create: { id: "singleton" },
-    update: {},
+  const last = await prisma.bannerImage.findFirst({ where: { slot }, orderBy: { sortOrder: "desc" } });
+  const row = await prisma.bannerImage.create({
+    data: { slot, imageUrl: "", sortOrder: (last?.sortOrder ?? -1) + 1 },
   });
 
-  const imageUrl = await saveUploadedImage("banners", `banner-${slot}`, formData, settings[field]);
-  if (!imageUrl) throw new Error("Choose a file or paste an image URL");
-
-  await prisma.appSettings.update({ where: { id: "singleton" }, data: { [field]: imageUrl } });
-  revalidatePath("/");
-  revalidatePath("/admin/settings");
-  return imageUrl;
+  try {
+    const imageUrl = await saveUploadedImage("banners", row.id, formData);
+    if (!imageUrl) throw new Error("Choose a file or paste an image URL");
+    await prisma.bannerImage.update({ where: { id: row.id }, data: { imageUrl } });
+    revalidatePath("/");
+    revalidatePath("/admin/settings");
+    return { id: row.id, imageUrl };
+  } catch (err) {
+    await prisma.bannerImage.delete({ where: { id: row.id } }).catch(() => {});
+    throw err;
+  }
 }
 
-export async function removeBannerImage(slot: 1 | 2 | 3 | 4) {
+export async function removeBannerImage(imageId: string) {
   await requireAdmin();
-  const field = BANNER_FIELDS[slot];
-  if (!field) throw new Error("Invalid banner slot");
-
-  const settings = await prisma.appSettings.upsert({
-    where: { id: "singleton" },
-    create: { id: "singleton" },
-    update: {},
-  });
-
-  if (settings[field]) {
-    await removeUploadedImage(settings[field]);
-    await prisma.appSettings.update({ where: { id: "singleton" }, data: { [field]: null } });
-  }
+  const row = await prisma.bannerImage.findUnique({ where: { id: imageId } });
+  if (!row) return;
+  await removeUploadedImage(row.imageUrl);
+  await prisma.bannerImage.delete({ where: { id: imageId } });
   revalidatePath("/");
   revalidatePath("/admin/settings");
 }

@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { StockStatus, OrderStatus, Role, AccountStatus } from "@prisma/client";
-import { isStaffRole, canSetOrderStatus } from "@/lib/roles";
+import { isStaffRole, canSetOrderStatus, canAssignDelivery, ROLE_LABELS, type StaffRole } from "@/lib/roles";
 
 async function requireAdmin() {
   const session = await auth();
@@ -159,16 +159,45 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   if (!canSetOrderStatus(session.user.role, status)) {
     throw new Error("You do not have permission to set this order status");
   }
+  const role = session.user.role as StaffRole;
+  const changedBy = `${session.user.name} (${ROLE_LABELS[role]})`;
+
   await prisma.order.update({
     where: { id: orderId },
     data: {
       status,
-      history: { create: { status } },
+      history: { create: { status, changedBy } },
     },
   });
+
+  if (status === "COMPLETE") {
+    await prisma.deliveryInfo.updateMany({
+      where: { orderId },
+      data: { deliveredAt: new Date() },
+    });
+  }
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/account/orders");
+}
+
+export async function assignDelivery(orderId: string, staffId: string | null) {
+  const session = await requireStaff();
+  if (!canAssignDelivery(session.user.role)) {
+    throw new Error("You do not have permission to assign deliveries");
+  }
+  if (staffId) {
+    const staff = await prisma.user.findUnique({ where: { id: staffId } });
+    if (!staff || staff.role !== "DELIVERY" || !staff.isActive) {
+      throw new Error("Invalid delivery staff member");
+    }
+  }
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { assignedToId: staffId },
+  });
+  revalidatePath("/admin/orders");
+  revalidatePath(`/admin/orders/${orderId}`);
 }
 
 export async function upsertDelivery(orderId: string, formData: FormData) {
@@ -254,8 +283,29 @@ export async function createStaffUser(formData: FormData) {
 
 export async function deactivateStaffUser(userId: string) {
   await requireAdmin();
-  await prisma.user.delete({ where: { id: userId } });
+  await prisma.user.update({ where: { id: userId }, data: { isActive: false } });
   revalidatePath("/admin/staff");
+}
+
+export async function reactivateStaffUser(userId: string) {
+  await requireAdmin();
+  await prisma.user.update({ where: { id: userId }, data: { isActive: true } });
+  revalidatePath("/admin/staff");
+}
+
+export async function changeOwnPassword(currentPassword: string, newPassword: string) {
+  const session = await requireStaff();
+  if (newPassword.length < 6) {
+    throw new Error("New password must be at least 6 characters");
+  }
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!user) throw new Error("Account not found");
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) throw new Error("Current password is incorrect");
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
 }
 
 export async function updateBusinessAccountStatus(accountId: string, status: AccountStatus) {

@@ -9,16 +9,28 @@ export default async function AdminOrdersPage() {
   const session = await auth();
   if (!session?.user || !isStaffRole(session.user.role)) redirect("/admin/login");
 
+  const isDelivery = session.user.role === "DELIVERY";
+
   const orders = await prisma.order.findMany({
+    where: isDelivery
+      ? {
+          OR: [
+            { assignedToId: session.user.id },
+            { assignedToId: null, status: "ON_DELIVERY" },
+          ],
+        }
+      : undefined,
     orderBy: { createdAt: "desc" },
-    include: { user: true, items: true, businessAccount: true },
+    include: { user: true, items: true, businessAccount: true, assignedTo: true },
   });
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-brand-navy">Orders &amp; Delivery</h1>
+      <h1 className="text-xl font-bold text-brand-navy">
+        {isDelivery ? "My Deliveries" : "Orders & Delivery"}
+      </h1>
       <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
-        <table className="w-full text-sm min-w-[820px]">
+        <table className="w-full text-sm min-w-[900px]">
           <thead>
             <tr className="text-left text-gray-400 text-xs border-b border-gray-100">
               <th className="font-normal px-4 py-3">Order</th>
@@ -27,6 +39,7 @@ export default async function AdminOrdersPage() {
               <th className="font-normal px-4 py-3">Date</th>
               <th className="font-normal px-4 py-3">Total</th>
               <th className="font-normal px-4 py-3">Status</th>
+              <th className="font-normal px-4 py-3">Assigned To</th>
               <th className="font-normal px-4 py-3"></th>
             </tr>
           </thead>
@@ -46,6 +59,9 @@ export default async function AdminOrdersPage() {
                   <span className="text-xs font-medium text-gray-700">
                     {ORDER_STATUS_LABEL[o.status]}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-xs text-gray-500">
+                  {o.assignedTo ? `${o.assignedTo.firstName} ${o.assignedTo.lastName}` : "-"}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Link href={`/admin/orders/${o.id}`} className="text-brand-green text-xs font-medium">

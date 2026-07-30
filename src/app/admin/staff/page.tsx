@@ -29,6 +29,7 @@ export default async function StaffPage() {
           phone: s.phone,
           role: s.role as StaffRole,
           roleLabel: ROLE_LABELS[s.role as StaffRole],
+          isActive: s.isActive,
         }))}
       />
     </div>

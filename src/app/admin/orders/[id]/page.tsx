@@ -1,10 +1,11 @@
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { formatDate, formatMVR } from "@/lib/format";
-import { upsertDelivery } from "../../actions";
+import { formatDate, formatMVR, ORDER_STATUS_LABEL } from "@/lib/format";
+import { upsertDelivery, assignDelivery } from "../../actions";
 import { StatusControls } from "./StatusControls";
-import { isStaffRole, ORDER_STATUS_PERMISSIONS, type StaffRole } from "@/lib/roles";
+import { AssignDriver } from "./AssignDriver";
+import { isStaffRole, canAssignDelivery, ORDER_STATUS_PERMISSIONS, type StaffRole } from "@/lib/roles";
 
 export default async function AdminOrderDetailPage({
   params,
@@ -24,12 +25,21 @@ export default async function AdminOrderDetailPage({
       items: { include: { product: true } },
       invoice: true,
       delivery: true,
+      assignedTo: true,
+      history: { orderBy: { changedAt: "asc" } },
     },
   });
   if (!order) notFound();
 
   const total = order.items.reduce((s, it) => s + it.amount, 0);
   const upsertDeliveryWithId = upsertDelivery.bind(null, order.id);
+
+  const driverOptions = canAssignDelivery(role)
+    ? await prisma.user.findMany({
+        where: { role: "DELIVERY", isActive: true },
+        orderBy: { firstName: "asc" },
+      })
+    : [];
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -63,6 +73,22 @@ export default async function AdminOrderDetailPage({
           currentStatus={order.status}
           allowedStatuses={ORDER_STATUS_PERMISSIONS[role]}
         />
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Assigned Driver</h2>
+        {canAssignDelivery(role) ? (
+          <AssignDriver
+            orderId={order.id}
+            currentDriverId={order.assignedToId}
+            drivers={driverOptions.map((d) => ({ id: d.id, name: `${d.firstName} ${d.lastName}` }))}
+            onAssign={assignDelivery}
+          />
+        ) : (
+          <p className="text-sm text-gray-600">
+            {order.assignedTo ? `${order.assignedTo.firstName} ${order.assignedTo.lastName}` : "Not yet assigned"}
+          </p>
+        )}
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -161,6 +187,20 @@ export default async function AdminOrderDetailPage({
           Save Delivery &amp; Invoice
         </button>
       </form>
+
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Status History</h2>
+        <div className="space-y-2">
+          {order.history.map((h) => (
+            <div key={h.id} className="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
+              <span className="text-gray-800">{ORDER_STATUS_LABEL[h.status]}</span>
+              <span className="text-xs text-gray-400">
+                {h.changedBy ?? "System"} · {formatDate(h.changedAt)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

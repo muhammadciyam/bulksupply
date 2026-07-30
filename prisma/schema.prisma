@@ -48,10 +48,12 @@ model User {
   phone        String   @unique
   passwordHash String
   role         Role     @default(CUSTOMER)
+  isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
-  accounts BusinessAccount[]
-  orders   Order[]
+  accounts       BusinessAccount[]
+  orders         Order[]
+  assignedOrders Order[] @relation("DeliveryAssignments")
 }
 
 model BusinessAccount {
@@ -134,6 +136,8 @@ model Order {
   status            OrderStatus @default(RECEIVED)
   deliveryMethod    String      @default("delivery")
   customerReference String?
+  assignedToId      String?
+  assignedTo        User?       @relation("DeliveryAssignments", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 

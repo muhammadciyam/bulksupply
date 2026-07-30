@@ -41,9 +41,14 @@ export function canManageCatalog(role: string | undefined): boolean {
   return role === "ADMIN";
 }
 
+// Admin and Cashier dispatch orders to a driver; Delivery staff receive assignments.
+export function canAssignDelivery(role: string | undefined): boolean {
+  return role === "ADMIN" || role === "CASHIER";
+}
+
 // Where a staff member lands after logging into the admin area.
+// The dashboard is role-aware, so every staff role lands there.
 export function defaultAdminRoute(role: string | undefined): string {
-  if (role === "ADMIN") return "/admin";
-  if (role === "CASHIER" || role === "DELIVERY") return "/admin/orders";
+  if (isStaffRole(role)) return "/admin";
   return "/admin/login";
 }

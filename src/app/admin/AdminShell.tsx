@@ -15,12 +15,13 @@ import {
   Menu,
   X,
   Building2,
+  UserCog,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ROLE_LABELS, type StaffRole } from "@/lib/roles";
 
 const NAV: { href: string; label: string; icon: typeof LayoutDashboard; roles: StaffRole[] }[] = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN"] },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "CASHIER", "DELIVERY"] },
   { href: "/admin/products", label: "Products", icon: Package, roles: ["ADMIN"] },
   { href: "/admin/inventory", label: "Inventory", icon: Boxes, roles: ["ADMIN"] },
   { href: "/admin/orders", label: "Orders & Delivery", icon: Truck, roles: ["ADMIN", "CASHIER", "DELIVERY"] },
@@ -95,6 +96,12 @@ export function AdminShell({
             className="flex items-center gap-2 px-1 py-2 text-xs text-white/60 hover:text-white"
           >
             <ExternalLink size={14} /> View storefront
+          </Link>
+          <Link
+            href="/admin/account"
+            className="flex items-center gap-2 px-1 py-2 text-xs text-white/60 hover:text-white"
+          >
+            <UserCog size={14} /> My Account
           </Link>
           <button
             onClick={() => signOut({ callbackUrl: "/admin/login" })}

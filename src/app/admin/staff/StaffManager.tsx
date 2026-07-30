@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Trash2, UserPlus } from "lucide-react";
-import { createStaffUser, deactivateStaffUser } from "../actions";
+import { Trash2, UserPlus, RotateCcw } from "lucide-react";
+import { createStaffUser, deactivateStaffUser, reactivateStaffUser } from "../actions";
 import type { StaffRole } from "@/lib/roles";
 
 type StaffMember = {
@@ -12,6 +12,7 @@ type StaffMember = {
   phone: string;
   role: StaffRole;
   roleLabel: string;
+  isActive: boolean;
 };
 
 const ROLE_BADGE: Record<StaffRole, string> = {
@@ -45,11 +46,18 @@ export function StaffManager({
     });
   }
 
-  function handleRemove(id: string) {
-    if (!confirm("Remove this staff member's access?")) return;
-    setMembers((prev) => prev.filter((m) => m.id !== id));
+  function handleDeactivate(id: string) {
+    if (!confirm("Deactivate this staff member's access? They can be reactivated later.")) return;
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, isActive: false } : m)));
     startTransition(async () => {
       await deactivateStaffUser(id);
+    });
+  }
+
+  function handleReactivate(id: string) {
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, isActive: true } : m)));
+    startTransition(async () => {
+      await reactivateStaffUser(id);
     });
   }
 
@@ -67,28 +75,44 @@ export function StaffManager({
           </thead>
           <tbody>
             {members.map((m) => (
-              <tr key={m.id} className="border-b border-gray-50">
+              <tr key={m.id} className={`border-b border-gray-50 ${m.isActive ? "" : "opacity-50"}`}>
                 <td className="px-4 py-3 font-medium text-gray-800">{m.name}</td>
                 <td className="px-4 py-3 text-gray-500 text-xs">
                   {m.email}
                   <br />
                   {m.phone}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 space-x-1.5">
                   <span className={`text-[10px] font-bold px-2 py-1 rounded ${ROLE_BADGE[m.role]}`}>
                     {m.roleLabel}
                   </span>
+                  {!m.isActive && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-500">
+                      Inactive
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {m.id !== currentUserId && (
-                    <button
-                      onClick={() => handleRemove(m.id)}
-                      disabled={pending}
-                      className="text-gray-300 hover:text-brand-red"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  )}
+                  {m.id !== currentUserId &&
+                    (m.isActive ? (
+                      <button
+                        onClick={() => handleDeactivate(m.id)}
+                        disabled={pending}
+                        className="text-gray-300 hover:text-brand-red"
+                        title="Deactivate"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleReactivate(m.id)}
+                        disabled={pending}
+                        className="text-gray-400 hover:text-brand-green"
+                        title="Reactivate"
+                      >
+                        <RotateCcw size={15} />
+                      </button>
+                    ))}
                 </td>
               </tr>
             ))}

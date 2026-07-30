@@ -2,11 +2,14 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { AccountHeader } from "@/components/AccountHeader";
+import { expireOverduePayments } from "@/lib/auto-cancel";
 import { OrdersView } from "./OrdersView";
 
 export default async function OrdersPage() {
   const session = await auth();
   if (!session?.user) redirect("/");
+
+  await expireOverduePayments();
 
   const orders = await prisma.order.findMany({
     where: { userId: session.user.id },
@@ -15,6 +18,7 @@ export default async function OrdersPage() {
       items: { include: { product: true } },
       invoice: true,
       delivery: true,
+      paymentSlip: true,
       user: true,
     },
   });
@@ -44,6 +48,13 @@ export default async function OrdersPage() {
           location: o.delivery.location,
           addressDetails: o.delivery.addressDetails,
           addressLocation: o.delivery.addressLocation,
+        }
+      : null,
+    paymentSlip: o.paymentSlip
+      ? {
+          fileName: o.paymentSlip.fileName,
+          status: o.paymentSlip.status,
+          rejectionReason: o.paymentSlip.rejectionReason,
         }
       : null,
   }));

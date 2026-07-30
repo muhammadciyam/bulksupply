@@ -40,6 +40,12 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PaymentSlipStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 model User {
   id           String   @id @default(cuid())
   firstName    String
@@ -138,13 +144,16 @@ model Order {
   customerReference String?
   assignedToId      String?
   assignedTo        User?       @relation("DeliveryAssignments", fields: [assignedToId], references: [id], onDelete: SetNull)
+  paymentDeadline   DateTime?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
-  items    OrderItem[]
-  invoice  Invoice?
-  delivery DeliveryInfo?
-  history  OrderStatusHistory[]
+  items         OrderItem[]
+  invoice       Invoice?
+  delivery      DeliveryInfo?
+  history       OrderStatusHistory[]
+  paymentSlip   PaymentSlip?
+  notifications Notification[]
 }
 
 model OrderItem {
@@ -185,4 +194,33 @@ model OrderStatusHistory {
   status    OrderStatus
   changedAt DateTime    @default(now())
   changedBy String?
+}
+
+model PaymentSlip {
+  id              String            @id @default(cuid())
+  orderId         String            @unique
+  order           Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  filePath        String
+  fileName        String
+  mimeType        String
+  status          PaymentSlipStatus @default(PENDING)
+  uploadedAt      DateTime          @default(now())
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  rejectionReason String?
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AppSettings {
+  id                  String @id @default("singleton")
+  paymentDeadlineDays Int    @default(3)
 }

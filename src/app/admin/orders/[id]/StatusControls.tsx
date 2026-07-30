@@ -49,7 +49,13 @@ export function StatusControls({
                     className={`flex flex-col items-center gap-1 group ${
                       allowed ? "" : "cursor-not-allowed opacity-60"
                     }`}
-                    title={allowed ? `Mark as ${step.label}` : `${step.label} is handled by another role`}
+                    title={
+                      allowed
+                        ? `Mark as ${step.label}`
+                        : step.key === "ORDER_INVOICED"
+                          ? "Set automatically when an invoice is generated"
+                          : `${step.label} is handled by another role`
+                    }
                   >
                     <div
                       className={`h-8 w-8 rounded-full flex items-center justify-center text-white text-xs transition-colors shrink-0 ${

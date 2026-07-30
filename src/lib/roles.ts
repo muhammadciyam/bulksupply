@@ -17,18 +17,20 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
 // Which order statuses each staff role is allowed to set an order to.
 // Admin can move an order to any stage. Cashier owns the office/paperwork
 // stages, Godown & Delivery staff own the warehouse/dispatch stages.
+// ORDER_INVOICED is deliberately excluded everywhere: it's only reachable
+// via generateInvoice(), which requires a verified payment slip and creates
+// the actual Invoice record — never a manual status click.
 export const ORDER_STATUS_PERMISSIONS: Record<StaffRole, OrderStatus[]> = {
   ADMIN: [
     "RECEIVED",
     "ORDER_CONFIRMED",
     "PRICE_QUOTED",
     "PAYMENT_PROCESSING",
-    "ORDER_INVOICED",
     "ON_DELIVERY",
     "COMPLETE",
     "CANCELLED",
   ],
-  CASHIER: ["ORDER_CONFIRMED", "PRICE_QUOTED", "PAYMENT_PROCESSING", "ORDER_INVOICED", "CANCELLED"],
+  CASHIER: ["ORDER_CONFIRMED", "PRICE_QUOTED", "PAYMENT_PROCESSING", "CANCELLED"],
   DELIVERY: ["ON_DELIVERY", "COMPLETE"],
 };
 
@@ -45,6 +47,12 @@ export function canManageCatalog(role: string | undefined): boolean {
 
 // Admin and Cashier dispatch orders to a driver; Delivery staff receive assignments.
 export function canAssignDelivery(role: string | undefined): boolean {
+  return role === "ADMIN" || role === "CASHIER";
+}
+
+// Admin and Cashier both review uploaded payment slips; only Admin generates
+// the resulting invoice (see generateInvoice in admin/actions.ts).
+export function canVerifyPayment(role: string | undefined): boolean {
   return role === "ADMIN" || role === "CASHIER";
 }
 

@@ -4,15 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Search, Gift, ShoppingCart, UserCircle, Store, ChevronDown, LogOut } from "lucide-react";
+import { Search, Gift, ShoppingCart, UserCircle, Store, ChevronDown, LogOut, LayoutDashboard } from "lucide-react";
 import { Logo } from "./Logo";
 import { AuthModal } from "./AuthModal";
 import { useCartStore } from "@/lib/cart-store";
+import { isStaffRole, ROLE_LABELS, type StaffRole } from "@/lib/roles";
 
 type Account = { id: string; name: string; status: string };
 
 export function Header() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
+  const staffRole = isStaffRole(session?.user?.role) ? (session!.user!.role as StaffRole) : null;
   const router = useRouter();
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -112,6 +114,18 @@ export function Header() {
                 </button>
                 {menuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg py-2 text-sm">
+                    {staffRole && (
+                      <>
+                        <Link
+                          href="/admin"
+                          className="flex items-center gap-2 px-4 py-2 text-brand-green font-semibold hover:bg-gray-50"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <LayoutDashboard size={14} /> {ROLE_LABELS[staffRole]} Panel
+                        </Link>
+                        <div className="border-t border-gray-100 my-1" />
+                      </>
+                    )}
                     <Link href="/account/profile" className="block px-4 py-2 hover:bg-gray-50" onClick={() => setMenuOpen(false)}>
                       Profile
                     </Link>

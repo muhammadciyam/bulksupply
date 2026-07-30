@@ -2,10 +2,11 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatMVR, ORDER_STATUS_LABEL } from "@/lib/format";
-import { upsertDelivery, assignDelivery } from "../../actions";
+import { upsertDelivery, assignDelivery, verifyPaymentSlip, rejectPaymentSlip, generateInvoice } from "../../actions";
 import { StatusControls } from "./StatusControls";
 import { AssignDriver } from "./AssignDriver";
-import { isStaffRole, canAssignDelivery, ORDER_STATUS_PERMISSIONS, type StaffRole } from "@/lib/roles";
+import { PaymentPanel } from "./PaymentPanel";
+import { isStaffRole, canAssignDelivery, canVerifyPayment, ORDER_STATUS_PERMISSIONS, type StaffRole } from "@/lib/roles";
 
 export default async function AdminOrderDetailPage({
   params,
@@ -26,6 +27,7 @@ export default async function AdminOrderDetailPage({
       invoice: true,
       delivery: true,
       assignedTo: true,
+      paymentSlip: true,
       history: { orderBy: { changedAt: "asc" } },
     },
   });
@@ -75,6 +77,41 @@ export default async function AdminOrderDetailPage({
         />
       </div>
 
+      {(canVerifyPayment(role) || order.paymentSlip || order.invoice) && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Payment &amp; Invoice</h2>
+          <PaymentPanel
+            orderId={order.id}
+            slip={
+              order.paymentSlip
+                ? {
+                    fileName: order.paymentSlip.fileName,
+                    status: order.paymentSlip.status,
+                    uploadedAt: order.paymentSlip.uploadedAt.toISOString(),
+                    verifiedAt: order.paymentSlip.verifiedAt?.toISOString() ?? null,
+                    verifiedBy: order.paymentSlip.verifiedBy,
+                    rejectionReason: order.paymentSlip.rejectionReason,
+                  }
+                : null
+            }
+            invoice={
+              order.invoice
+                ? {
+                    referenceNo: order.invoice.referenceNo,
+                    amount: order.invoice.amount,
+                    issuedAt: order.invoice.issuedAt.toISOString(),
+                  }
+                : null
+            }
+            canVerify={canVerifyPayment(role)}
+            canGenerate={role === "ADMIN"}
+            onVerify={verifyPaymentSlip}
+            onReject={rejectPaymentSlip}
+            onGenerate={generateInvoice}
+          />
+        </div>
+      )}
+
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Assigned Driver</h2>
         {canAssignDelivery(role) ? (
@@ -116,7 +153,7 @@ export default async function AdminOrderDetailPage({
       </div>
 
       <form action={upsertDeliveryWithId} className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700">Delivery &amp; Invoice</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Delivery</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Delivery Method</label>
@@ -161,30 +198,12 @@ export default async function AdminOrderDetailPage({
               className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 text-sm"
             />
           </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Invoice Reference No.</label>
-            <input
-              name="invoiceRef"
-              defaultValue={order.invoice?.referenceNo ?? ""}
-              className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Invoice Amount</label>
-            <input
-              name="invoiceAmount"
-              type="number"
-              step="0.01"
-              defaultValue={order.invoice?.amount ?? total}
-              className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 text-sm"
-            />
-          </div>
         </div>
         <button
           type="submit"
           className="bg-brand-green hover:bg-brand-green-dark text-white font-semibold px-6 py-2 rounded text-sm"
         >
-          Save Delivery &amp; Invoice
+          Save Delivery
         </button>
       </form>
 

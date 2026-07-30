@@ -4,10 +4,13 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatMVR, ORDER_STATUS_LABEL } from "@/lib/format";
 import { isStaffRole } from "@/lib/roles";
+import { expireOverduePayments } from "@/lib/auto-cancel";
 
 export default async function AdminOrdersPage() {
   const session = await auth();
   if (!session?.user || !isStaffRole(session.user.role)) redirect("/admin/login");
+
+  await expireOverduePayments();
 
   const isDelivery = session.user.role === "DELIVERY";
 

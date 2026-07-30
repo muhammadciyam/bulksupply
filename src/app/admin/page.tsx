@@ -4,11 +4,14 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatMVR, ORDER_STATUS_LABEL } from "@/lib/format";
 import { isStaffRole } from "@/lib/roles";
+import { expireOverduePayments } from "@/lib/auto-cancel";
 import { Package, Boxes, AlertTriangle, Truck, Receipt, CheckCircle2 } from "lucide-react";
 
 export default async function AdminDashboard() {
   const session = await auth();
   if (!session?.user || !isStaffRole(session.user.role)) redirect("/admin/login");
+
+  await expireOverduePayments();
 
   if (session.user.role === "CASHIER") return <CashierDashboard />;
   if (session.user.role === "DELIVERY") return <DeliveryDashboard driverId={session.user.id} />;

@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check } from "lucide-react";
+import Link from "next/link";
+import { Check, FileDown } from "lucide-react";
 import { ORDER_STEPS, ORDER_STATUS_LABEL, formatDate, formatMVR } from "@/lib/format";
+import { PaymentSlipUpload } from "./PaymentSlipUpload";
 
 type OrderItem = {
   id: string;
@@ -25,6 +27,11 @@ type Order = {
   items: OrderItem[];
   invoice: { referenceNo: string; amount: number } | null;
   delivery: { location: string; addressDetails: string | null; addressLocation: string | null } | null;
+  paymentSlip: {
+    fileName: string;
+    status: "PENDING" | "VERIFIED" | "REJECTED";
+    rejectionReason: string | null;
+  } | null;
 };
 
 const PAGE_SIZE = 12;
@@ -199,12 +206,26 @@ export function OrdersView({ orders }: { orders: Order[] }) {
             </table>
           </div>
 
+          {selected.status === "PAYMENT_PROCESSING" && (
+            <div>
+              <p className="text-sm font-semibold text-gray-600 mb-2">Payment Slip</p>
+              <PaymentSlipUpload orderId={selected.id} slip={selected.paymentSlip} />
+            </div>
+          )}
+
           {selected.invoice && (
             <div>
               <p className="text-sm font-semibold text-gray-600 mb-2">Invoice</p>
-              <div className="bg-gray-50 rounded-md p-4 text-sm space-y-1">
+              <div className="bg-gray-50 rounded-md p-4 text-sm space-y-2">
                 <p>Reference: {selected.invoice.referenceNo}</p>
                 <p>Amount: MVR {formatMVR(selected.invoice.amount)}</p>
+                <Link
+                  href={`/account/orders/${selected.id}/invoice`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 text-brand-green text-xs font-semibold hover:underline"
+                >
+                  <FileDown size={14} /> View &amp; Download Invoice
+                </Link>
               </div>
             </div>
           )}

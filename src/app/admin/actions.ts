@@ -6,7 +6,15 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { StockStatus, OrderStatus, Role, AccountStatus } from "@prisma/client";
-import { isStaffRole, canSetOrderStatus, canAssignDelivery, canManageCatalog, ROLE_LABELS, type StaffRole } from "@/lib/roles";
+import {
+  isStaffRole,
+  canSetOrderStatus,
+  canAssignDelivery,
+  canManageCatalog,
+  canVerifyPayment,
+  ROLE_LABELS,
+  type StaffRole,
+} from "@/lib/roles";
 
 async function requireAdmin() {
   const session = await auth();
@@ -30,6 +38,23 @@ async function requireStaff() {
     redirect("/admin/login");
   }
   return session;
+}
+
+async function requirePaymentVerifier() {
+  const session = await auth();
+  if (!session?.user || !canVerifyPayment(session.user.role)) {
+    redirect("/admin/login");
+  }
+  return session;
+}
+
+async function getPaymentDeadlineDays() {
+  const settings = await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton" },
+    update: {},
+  });
+  return settings.paymentDeadlineDays;
 }
 
 function slugify(s: string) {
@@ -170,10 +195,17 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   const role = session.user.role as StaffRole;
   const changedBy = `${session.user.name} (${ROLE_LABELS[role]})`;
 
+  let paymentDeadline: Date | undefined;
+  if (status === "PAYMENT_PROCESSING") {
+    const days = await getPaymentDeadlineDays();
+    paymentDeadline = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  }
+
   await prisma.order.update({
     where: { id: orderId },
     data: {
       status,
+      ...(paymentDeadline ? { paymentDeadline } : {}),
       history: { create: { status, changedBy } },
     },
   });
@@ -208,6 +240,84 @@ export async function assignDelivery(orderId: string, staffId: string | null) {
   revalidatePath(`/admin/orders/${orderId}`);
 }
 
+export async function verifyPaymentSlip(orderId: string) {
+  const session = await requirePaymentVerifier();
+  const role = session.user.role as StaffRole;
+  const verifiedBy = `${session.user.name} (${ROLE_LABELS[role]})`;
+
+  const slip = await prisma.paymentSlip.findUnique({ where: { orderId } });
+  if (!slip) throw new Error("No payment slip has been uploaded for this order");
+
+  await prisma.paymentSlip.update({
+    where: { orderId },
+    data: { status: "VERIFIED", verifiedAt: new Date(), verifiedBy, rejectionReason: null },
+  });
+
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/account/orders");
+}
+
+export async function rejectPaymentSlip(orderId: string, reason: string) {
+  await requirePaymentVerifier();
+  if (!reason.trim()) throw new Error("A rejection reason is required");
+
+  const slip = await prisma.paymentSlip.findUnique({ where: { orderId } });
+  if (!slip) throw new Error("No payment slip has been uploaded for this order");
+
+  await prisma.paymentSlip.update({
+    where: { orderId },
+    data: { status: "REJECTED", rejectionReason: reason.trim(), verifiedAt: null, verifiedBy: null },
+  });
+
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/account/orders");
+}
+
+export async function generateInvoice(orderId: string) {
+  const session = await requireAdmin();
+  const role = session.user.role as StaffRole;
+  const changedBy = `${session.user.name} (${ROLE_LABELS[role]})`;
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true, paymentSlip: true, invoice: true },
+  });
+  if (!order) throw new Error("Order not found");
+  if (order.invoice) throw new Error("An invoice has already been generated for this order");
+  if (order.paymentSlip?.status !== "VERIFIED") {
+    throw new Error("Payment must be verified before an invoice can be generated");
+  }
+
+  const amount = order.items.reduce((sum, it) => sum + it.amount, 0);
+  const referenceNo = String(10000000 + Math.floor(Math.random() * 89999999));
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      status: "ORDER_INVOICED",
+      invoice: { create: { referenceNo, amount } },
+      history: { create: { status: "ORDER_INVOICED", changedBy } },
+    },
+  });
+
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin/orders");
+  revalidatePath("/account/orders");
+}
+
+export async function updateAppSettings(paymentDeadlineDays: number) {
+  await requireAdmin();
+  if (!Number.isInteger(paymentDeadlineDays) || paymentDeadlineDays < 1) {
+    throw new Error("Deadline must be a whole number of days, at least 1");
+  }
+  await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton", paymentDeadlineDays },
+    update: { paymentDeadlineDays },
+  });
+  revalidatePath("/admin/settings");
+}
+
 export async function upsertDelivery(orderId: string, formData: FormData) {
   await requireStaff();
   const location = String(formData.get("location") ?? "").trim();
@@ -229,22 +339,6 @@ export async function upsertDelivery(orderId: string, formData: FormData) {
       },
     },
   });
-
-  const invoiceAmount = formData.get("invoiceAmount");
-  const invoiceRef = formData.get("invoiceRef");
-  if (invoiceAmount && invoiceRef) {
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        invoice: {
-          upsert: {
-            create: { referenceNo: String(invoiceRef), amount: Number(invoiceAmount) },
-            update: { referenceNo: String(invoiceRef), amount: Number(invoiceAmount) },
-          },
-        },
-      },
-    });
-  }
 
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/account/orders");

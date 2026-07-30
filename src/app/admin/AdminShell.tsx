@@ -16,9 +16,11 @@ import {
   X,
   Building2,
   UserCog,
+  Settings,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { ROLE_LABELS, type StaffRole } from "@/lib/roles";
+import { ROLE_LABELS, canVerifyPayment, type StaffRole } from "@/lib/roles";
+import { NotificationBell } from "./NotificationBell";
 
 const NAV: { href: string; label: string; icon: typeof LayoutDashboard; roles: StaffRole[] }[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "CASHIER", "DELIVERY"] },
@@ -27,6 +29,7 @@ const NAV: { href: string; label: string; icon: typeof LayoutDashboard; roles: S
   { href: "/admin/orders", label: "Orders & Delivery", icon: Truck, roles: ["ADMIN", "CASHIER", "DELIVERY"] },
   { href: "/admin/accounts", label: "Customer Accounts", icon: Building2, roles: ["ADMIN"] },
   { href: "/admin/staff", label: "Staff", icon: Users, roles: ["ADMIN"] },
+  { href: "/admin/settings", label: "Settings", icon: Settings, roles: ["ADMIN"] },
 ];
 
 export function AdminShell({
@@ -125,7 +128,10 @@ export function AdminShell({
               Bulk Supply Admin <span className="hidden sm:inline">· {ROLE_LABELS[role]}</span>
             </p>
           </div>
-          <p className="text-sm font-medium text-gray-700 shrink-0 truncate max-w-[40%]">{userName}</p>
+          <div className="flex items-center gap-3 shrink-0">
+            {canVerifyPayment(role) && <NotificationBell />}
+            <p className="text-sm font-medium text-gray-700 truncate max-w-[40%]">{userName}</p>
+          </div>
         </header>
         <main className="flex-1 p-4 sm:p-6 overflow-x-auto">{children}</main>
       </div>

@@ -48,6 +48,7 @@ export default async function Home({
                       name: p.name,
                       sku: p.sku,
                       stockStatus: p.stockStatus,
+                      imageUrl: p.imageUrl,
                       units: p.units,
                     }}
                   />

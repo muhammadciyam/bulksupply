@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { saveProductImage } from "@/lib/product-image";
 import { StockStatus, OrderStatus, Role, AccountStatus } from "@prisma/client";
 import {
   isStaffRole,
@@ -103,10 +104,22 @@ export async function createProduct(formData: FormData) {
     },
   });
 
+  let imageError: string | null = null;
+  try {
+    const imageUrl = await saveProductImage(product.id, formData);
+    if (imageUrl) {
+      await prisma.product.update({ where: { id: product.id }, data: { imageUrl } });
+    }
+  } catch (err) {
+    imageError = err instanceof Error ? err.message : "Could not save the product image";
+  }
+
   revalidatePath("/admin/products");
   revalidatePath("/admin/inventory");
   revalidatePath("/");
-  redirect(`/admin/products/${product.id}`);
+  redirect(
+    `/admin/products/${product.id}${imageError ? `?imageError=${encodeURIComponent(imageError)}` : ""}`
+  );
 }
 
 export async function updateProduct(productId: string, formData: FormData) {
@@ -121,6 +134,17 @@ export async function updateProduct(productId: string, formData: FormData) {
     where: { id: productId },
     data: { name, categoryId, description, stockStatus },
   });
+
+  let imageError: string | null = null;
+  try {
+    const current = await prisma.product.findUnique({ where: { id: productId }, select: { imageUrl: true } });
+    const imageUrl = await saveProductImage(productId, formData, current?.imageUrl);
+    if (imageUrl) {
+      await prisma.product.update({ where: { id: productId }, data: { imageUrl } });
+    }
+  } catch (err) {
+    imageError = err instanceof Error ? err.message : "Could not save the product image";
+  }
 
   const unitIds = formData.getAll("unitId") as string[];
   const unitLabels = formData.getAll("unitLabel") as string[];
@@ -148,6 +172,9 @@ export async function updateProduct(productId: string, formData: FormData) {
   revalidatePath("/admin/products");
   revalidatePath(`/admin/products/${productId}`);
   revalidatePath("/");
+  if (imageError) {
+    redirect(`/admin/products/${productId}?imageError=${encodeURIComponent(imageError)}`);
+  }
 }
 
 export async function deleteProduct(productId: string) {

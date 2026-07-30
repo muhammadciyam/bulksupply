@@ -19,6 +19,7 @@ type Props = {
     units: UnitRow[];
     quantityOnHand?: number;
     lowStockThreshold?: number;
+    imageUrl?: string | null;
   };
   showInventoryFields?: boolean;
   showSku?: boolean;
@@ -35,9 +36,52 @@ export function ProductForm({
   const [units, setUnits] = useState<UnitRow[]>(
     initial?.units?.length ? initial.units : [{ label: "Carton", packSize: "", price: "" }]
   );
+  const [preview, setPreview] = useState<string | null>(initial?.imageUrl ?? null);
 
   return (
-    <form action={action} className="space-y-6 max-w-2xl">
+    <form action={action} className="space-y-6 max-w-2xl" encType="multipart/form-data">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-gray-700">Product Image</h3>
+        <div className="flex items-start gap-4">
+          <div className="h-24 w-24 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+            {preview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={preview} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-[10px] text-gray-400 text-center px-2">No image</span>
+            )}
+          </div>
+          <div className="flex-1 space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Upload from your computer</label>
+              <input
+                type="file"
+                name="imageFile"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setPreview(URL.createObjectURL(file));
+                }}
+                className="w-full text-xs"
+              />
+            </div>
+            <p className="text-[11px] text-gray-400">or paste an image URL below to fetch it automatically</p>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Image URL</label>
+              <input
+                type="url"
+                name="imageUrl"
+                placeholder="https://example.com/product.jpg"
+                onChange={(e) => {
+                  if (e.target.value) setPreview(e.target.value);
+                }}
+                className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>

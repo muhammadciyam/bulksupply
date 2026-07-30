@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { ShoppingCart, Package } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { formatMVR, STOCK_BADGE } from "@/lib/format";
@@ -10,6 +11,7 @@ export type ProductCardData = {
   name: string;
   sku: string;
   stockStatus: string;
+  imageUrl?: string | null;
   units: { label: string; packSize: string; price: number }[];
 };
 
@@ -37,8 +39,18 @@ export function ProductCard({ product }: { product: ProductCardData }) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-md flex flex-col overflow-hidden hover:shadow-md transition-shadow">
-      <div className="relative aspect-square bg-gray-50 flex items-center justify-center">
-        <Package className="text-gray-300" size={48} strokeWidth={1.2} />
+      <div className="relative aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
+        {product.imageUrl ? (
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 50vw, 20vw"
+          />
+        ) : (
+          <Package className="text-gray-300" size={48} strokeWidth={1.2} />
+        )}
         {badge?.label && (
           <span
             className={`absolute top-0 left-0 text-[10px] font-bold px-2 py-1 ${badge.className}`}

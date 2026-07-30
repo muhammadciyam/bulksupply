@@ -1,8 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Plus } from "lucide-react";
+import { Plus, Package } from "lucide-react";
 import { formatMVR, STOCK_BADGE } from "@/lib/format";
 import { isStaffRole, canManageCatalog } from "@/lib/roles";
 
@@ -46,8 +47,19 @@ export default async function AdminProductsPage() {
               return (
                 <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-gray-800">{p.name}</p>
-                    <p className="text-xs text-gray-400">{p.sku}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-10 w-10 rounded bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                        {p.imageUrl ? (
+                          <Image src={p.imageUrl} alt="" fill className="object-cover" sizes="40px" />
+                        ) : (
+                          <Package className="text-gray-300" size={18} strokeWidth={1.2} />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-800">{p.name}</p>
+                        <p className="text-xs text-gray-400">{p.sku}</p>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{p.category.name}</td>
                   <td className="px-4 py-3 text-gray-600">

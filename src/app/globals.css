@@ -8,6 +8,8 @@
   --brand-navy: #16325c;
   --brand-blue: #2f8fd1;
   --brand-red: #e0303a;
+  --brand-orange: #f2871e;
+  --brand-orange-dark: #c96f16;
   --surface-muted: #f3f4f6;
 }
 
@@ -19,6 +21,8 @@
   --color-brand-navy: var(--brand-navy);
   --color-brand-blue: var(--brand-blue);
   --color-brand-red: var(--brand-red);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-orange-dark: var(--brand-orange-dark);
   --color-surface-muted: var(--surface-muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

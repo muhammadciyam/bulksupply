@@ -71,19 +71,19 @@ export function ProductCard({ product }: { product: ProductCardData }) {
       {lightboxOpen && (
         <ImageLightbox images={product.images} alt={product.name} onClose={() => setLightboxOpen(false)} />
       )}
-      <div className="p-2.5 flex flex-col grow gap-1.5">
+      <div className="p-2 flex flex-col grow gap-1">
         <div>
           <p className="text-[11px] font-semibold text-gray-800 leading-snug line-clamp-2 uppercase tracking-tight">
             {product.name}
           </p>
-          <p className="text-[10px] text-gray-400 mt-0.5">{product.sku}</p>
+          <p className="text-[10px] text-gray-400">{product.sku}</p>
         </div>
 
         {product.units.length > 1 ? (
           <select
             value={unitIndex}
             onChange={(e) => setUnitIndex(Number(e.target.value))}
-            className="text-[11px] border border-gray-200 rounded-full px-2 py-1 text-gray-600 bg-gray-50 w-fit max-w-full"
+            className="text-[11px] border border-gray-200 rounded-full px-2 py-0.5 text-gray-600 bg-gray-50 w-fit max-w-full"
           >
             {product.units.map((u, i) => (
               <option key={u.label} value={i}>
@@ -97,7 +97,7 @@ export function ProductCard({ product }: { product: ProductCardData }) {
           </span>
         )}
 
-        <div className="mt-auto flex items-end justify-between gap-2 pt-1">
+        <div className="mt-auto flex items-end justify-between gap-2">
           <div className="flex items-baseline gap-1">
             <span className="text-[10px] text-gray-400">MVR</span>
             <span className="text-base font-bold text-brand-green">{formatMVR(unit.price)}</span>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ShoppingCart, Package } from "lucide-react";
+import { ShoppingCart, Check, Package } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { formatMVR, STOCK_BADGE } from "@/lib/format";
 import { ImageLightbox } from "./ImageLightbox";
@@ -41,19 +41,19 @@ export function ProductCard({ product }: { product: ProductCardData }) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-md flex flex-col overflow-hidden hover:shadow-md transition-shadow">
-      <div className="relative aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-[4/5] bg-gray-50 flex items-center justify-center overflow-hidden">
         {product.images.length > 0 ? (
           <button
             type="button"
             onClick={() => setLightboxOpen(true)}
             aria-label={`View photos of ${product.name}`}
-            className="absolute inset-0 cursor-zoom-in"
+            className="absolute inset-0 cursor-zoom-in outline-none focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-green"
           >
             <Image
               src={product.images[0]}
               alt={product.name}
               fill
-              className="object-cover"
+              className="object-cover scale-110 transition-transform duration-300 hover:scale-125"
               sizes="(max-width: 640px) 50vw, 20vw"
             />
           </button>
@@ -72,19 +72,18 @@ export function ProductCard({ product }: { product: ProductCardData }) {
         <ImageLightbox images={product.images} alt={product.name} onClose={() => setLightboxOpen(false)} />
       )}
       <div className="p-2.5 flex flex-col grow gap-1.5">
-        <p className="text-[11px] font-medium text-gray-800 leading-tight line-clamp-2 uppercase min-h-[2rem]">
-          {product.name}
-          <span className="text-gray-400 normal-case"> | {product.sku}</span>
-        </p>
-        <div className="flex items-baseline justify-end gap-1">
-          <span className="text-[10px] text-gray-400">MVR</span>
-          <span className="text-lg font-bold text-brand-green">{formatMVR(unit.price)}</span>
+        <div>
+          <p className="text-[11px] font-semibold text-gray-800 leading-snug line-clamp-2 uppercase tracking-tight">
+            {product.name}
+          </p>
+          <p className="text-[10px] text-gray-400 mt-0.5">{product.sku}</p>
         </div>
+
         {product.units.length > 1 ? (
           <select
             value={unitIndex}
             onChange={(e) => setUnitIndex(Number(e.target.value))}
-            className="text-[11px] border border-gray-200 rounded px-1.5 py-1 text-gray-600"
+            className="text-[11px] border border-gray-200 rounded-full px-2 py-1 text-gray-600 bg-gray-50 w-fit max-w-full"
           >
             {product.units.map((u, i) => (
               <option key={u.label} value={i}>
@@ -93,20 +92,26 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             ))}
           </select>
         ) : (
-          <div className="text-[11px] text-gray-500">
-            <div>{unit.label}</div>
-            <div className="text-gray-400">{unit.packSize}</div>
-          </div>
+          <span className="text-[10px] text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 w-fit">
+            {unit.label} · {unit.packSize}
+          </span>
         )}
-        <button
-          onClick={handleAdd}
-          className={`mt-1 self-end flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded transition-colors ${
-            added ? "text-brand-green" : "text-gray-700 hover:text-brand-green"
-          }`}
-        >
-          {added ? "Added" : "Add"}
-          <ShoppingCart size={15} />
-        </button>
+
+        <div className="mt-auto flex items-end justify-between gap-2 pt-1">
+          <div className="flex items-baseline gap-1">
+            <span className="text-[10px] text-gray-400">MVR</span>
+            <span className="text-base font-bold text-brand-green">{formatMVR(unit.price)}</span>
+          </div>
+          <button
+            onClick={handleAdd}
+            aria-label={added ? "Added to cart" : "Add to cart"}
+            className={`flex items-center justify-center h-8 w-8 rounded-full transition-colors shrink-0 outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green ${
+              added ? "bg-brand-green/15 text-brand-green" : "bg-brand-green text-white hover:bg-brand-green-dark"
+            }`}
+          >
+            {added ? <Check size={15} /> : <ShoppingCart size={14} />}
+          </button>
+        </div>
       </div>
     </div>
   );

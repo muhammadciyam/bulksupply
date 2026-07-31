@@ -25,7 +25,12 @@ export default function CartPage() {
 
   async function handleCheckout() {
     if (status !== "authenticated") {
-      setAuthOpen(true);
+      const isMobile = window.matchMedia("(max-width: 767px)").matches;
+      if (isMobile) {
+        router.push("/login?redirect=/cart");
+      } else {
+        setAuthOpen(true);
+      }
       return;
     }
     setPlacing(true);

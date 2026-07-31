@@ -33,7 +33,7 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function LoginForm({ onSuccess, onSwitch }: { onSuccess: () => void; onSwitch: () => void }) {
+export function LoginForm({ onSuccess, onSwitch }: { onSuccess: () => void; onSwitch: () => void }) {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -114,7 +114,7 @@ function LoginForm({ onSuccess, onSwitch }: { onSuccess: () => void; onSwitch: (
   );
 }
 
-function RegisterForm({ onSuccess, onSwitch }: { onSuccess: () => void; onSwitch: () => void }) {
+export function RegisterForm({ onSuccess, onSwitch }: { onSuccess: () => void; onSwitch: () => void }) {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",

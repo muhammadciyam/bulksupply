@@ -1,5 +1,4 @@
-import { mkdir, unlink, writeFile } from "fs/promises";
-import path from "path";
+import { PUBLIC_BUCKET, uploadToBucket, removeFromBucket, getPublicUrl, publicUrlToPath } from "./supabase-storage";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES: Record<string, string> = {
@@ -18,21 +17,21 @@ function isPrivateHost(hostname: string): boolean {
   return a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254);
 }
 
-async function persist(subdir: string, id: string, buffer: Buffer, ext: string, currentImageUrl?: string | null): Promise<string> {
-  const uploadDir = path.join(process.cwd(), "public", "uploads", subdir);
-  await mkdir(uploadDir, { recursive: true });
-  const fileName = `${id}.${ext}`;
-  const newUrl = `/uploads/${subdir}/${fileName}`;
+async function persist(subdir: string, id: string, buffer: Buffer, ext: string, contentType: string, currentImageUrl?: string | null): Promise<string> {
+  const filePath = `${subdir}/${id}.${ext}`;
 
-  if (currentImageUrl && currentImageUrl !== newUrl) {
-    await unlink(path.join(process.cwd(), "public", currentImageUrl)).catch(() => {});
+  if (currentImageUrl) {
+    const oldPath = publicUrlToPath(PUBLIC_BUCKET, currentImageUrl);
+    if (oldPath && oldPath !== filePath) {
+      await removeFromBucket(PUBLIC_BUCKET, oldPath);
+    }
   }
 
-  await writeFile(path.join(uploadDir, fileName), buffer);
-  return newUrl;
+  await uploadToBucket(PUBLIC_BUCKET, filePath, buffer, contentType);
+  return getPublicUrl(PUBLIC_BUCKET, filePath);
 }
 
-// Saves an uploaded File. Stored at public/uploads/<subdir>/<id>.<ext>.
+// Saves an uploaded File to Supabase Storage, at <subdir>/<id>.<ext>.
 export async function saveImageFile(
   subdir: string,
   id: string,
@@ -43,7 +42,7 @@ export async function saveImageFile(
   const ext = ALLOWED_TYPES[file.type];
   if (!ext) throw new Error("Only JPG, PNG, or WEBP images are allowed");
   const buffer = Buffer.from(await file.arrayBuffer());
-  return persist(subdir, id, buffer, ext, currentImageUrl);
+  return persist(subdir, id, buffer, ext, file.type, currentImageUrl);
 }
 
 // Downloads an image from a pasted URL server-side and saves it the same way.
@@ -81,11 +80,11 @@ export async function saveImageFromUrl(
   const buffer = Buffer.from(await res.arrayBuffer());
   if (buffer.byteLength > MAX_SIZE) throw new Error("Image must be 5MB or smaller");
 
-  return persist(subdir, id, buffer, ext, currentImageUrl);
+  return persist(subdir, id, buffer, ext, contentType, currentImageUrl);
 }
 
 // Saves an image from either an uploaded file ("imageFile") or, if no file was
-// given, a pasted image URL ("imageUrl"). Returns the new local image URL, or
+// given, a pasted image URL ("imageUrl"). Returns the new public image URL, or
 // undefined if neither field was provided.
 export async function saveUploadedImage(
   subdir: string,
@@ -105,5 +104,6 @@ export async function saveUploadedImage(
 }
 
 export async function removeUploadedImage(imageUrl: string): Promise<void> {
-  await unlink(path.join(process.cwd(), "public", imageUrl)).catch(() => {});
+  const filePath = publicUrlToPath(PUBLIC_BUCKET, imageUrl);
+  if (filePath) await removeFromBucket(PUBLIC_BUCKET, filePath);
 }

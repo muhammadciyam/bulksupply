@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { mkdir, unlink, writeFile } from "fs/promises";
-import path from "path";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { PAYMENT_SLIP_BUCKET, uploadToBucket, removeFromBucket } from "@/lib/supabase-storage";
 
-const UPLOAD_DIR = path.join(process.cwd(), "uploads", "payment-slips");
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -44,15 +42,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Only JPG, PNG, or PDF files are allowed" }, { status: 400 });
   }
 
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  const filePath = path.join(UPLOAD_DIR, `${order.id}.${ext}`);
+  const filePath = `${order.id}.${ext}`;
 
   if (order.paymentSlip && order.paymentSlip.filePath !== filePath) {
-    await unlink(order.paymentSlip.filePath).catch(() => {});
+    await removeFromBucket(PAYMENT_SLIP_BUCKET, order.paymentSlip.filePath);
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(filePath, buffer);
+  await uploadToBucket(PAYMENT_SLIP_BUCKET, filePath, buffer, file.type);
 
   await prisma.paymentSlip.upsert({
     where: { orderId: order.id },

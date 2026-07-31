@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { readFile } from "fs/promises";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { canVerifyPayment } from "@/lib/roles";
+import { PAYMENT_SLIP_BUCKET, downloadFromBucket } from "@/lib/supabase-storage";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -24,8 +24,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const buffer = await readFile(order.paymentSlip.filePath);
-  return new NextResponse(buffer, {
+  const buffer = await downloadFromBucket(PAYMENT_SLIP_BUCKET, order.paymentSlip.filePath);
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": order.paymentSlip.mimeType,
       "Content-Disposition": `inline; filename="${order.paymentSlip.fileName}"`,

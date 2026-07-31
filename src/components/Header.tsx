@@ -61,7 +61,7 @@ export function Header() {
   return (
     <>
       <header className="border-b border-gray-200 bg-white sticky top-0 z-40">
-        <div className="max-w-[1400px] mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-4">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-4">
           <Logo />
           <form onSubmit={handleSearch} className="flex-1 hidden md:flex">
             <div className="w-full flex items-center bg-gray-100 rounded-md px-3 py-2 gap-2">

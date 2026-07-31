@@ -45,7 +45,7 @@ export function AccountHeader() {
 
   return (
     <header className="border-b border-gray-200 bg-white">
-      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-4">
+      <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-4">
         <Logo />
         <Link
           href="/"

@@ -50,7 +50,7 @@ export default async function Home({
   return (
     <div className="flex flex-col min-h-screen pb-16 md:pb-0">
       <Header />
-      <main className="max-w-[1400px] mx-auto w-full px-4 py-4 flex-1">
+      <main className="max-w-[1600px] mx-auto w-full px-4 py-4 flex-1">
         <BannerCarousel imagesBySlot={imagesBySlot} />
         <div className="mt-4">
           <MobileCategoryFilter activeSlug={category} />
@@ -93,7 +93,7 @@ export default async function Home({
             {products.length === 0 ? (
               <p className="text-gray-400 text-sm py-12 text-center">No products found.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {products.map((p) => (
                   <ProductCard
                     key={p.id}
@@ -120,7 +120,7 @@ export default async function Home({
 function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white mt-8">
-      <div className="max-w-[1400px] mx-auto px-4 py-6 flex flex-col items-center gap-3 text-xs text-gray-400 text-center">
+      <div className="max-w-[1600px] mx-auto px-4 py-6 flex flex-col items-center gap-3 text-xs text-gray-400 text-center">
         <Logo />
         <p>© {new Date().getFullYear()} Bulk Supply. All rights reserved.</p>
       </div>

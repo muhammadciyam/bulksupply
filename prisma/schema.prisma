@@ -122,14 +122,18 @@ model ProductImage {
 }
 
 model ProductUnit {
-  id        String  @id @default(cuid())
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  label     String // e.g. "Dozen", "Carton", "Packet"
-  packSize  String // e.g. "12 X 200ML"
-  price     Float
-  costPrice Float?
-  isDefault Boolean @default(false)
+  id              String  @id @default(cuid())
+  productId       String
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label           String // e.g. "Dozen", "Carton", "Packet"
+  packSize        String // e.g. "12 X 200ML"
+  price           Float // selling price, GST-inclusive — what the customer is actually charged
+  priceExGst      Float? // selling price excluding GST, only meaningful when gstApplicable is true
+  gstApplicable   Boolean @default(false)
+  gstRate         Float? // GST percentage used to derive the *-IncGst values, only meaningful when gstApplicable is true
+  costPrice       Float? // cost price excluding GST — the true cost basis used for margin calculations
+  costPriceIncGst Float? // cost price including GST, only meaningful when gstApplicable is true
+  isDefault       Boolean @default(false)
 
   @@unique([productId, label])
 }
@@ -245,6 +249,8 @@ model Notification {
 model AppSettings {
   id                  String @id @default("singleton")
   paymentDeadlineDays Int    @default(3)
+  gstPercent          Float  @default(0)
+  themeColor          String @default("blue")
 }
 
 model BannerImage {

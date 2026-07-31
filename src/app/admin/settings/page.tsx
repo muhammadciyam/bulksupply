@@ -2,8 +2,11 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { SettingsForm } from "./SettingsForm";
+import { GstSettingsForm } from "./GstSettingsForm";
+import { ThemeSettingsForm } from "./ThemeSettingsForm";
 import { BannerImageForm } from "./BannerImageForm";
 import { BANNER_SLIDES } from "@/lib/banners";
+import { isThemeColor, DEFAULT_THEME_COLOR } from "@/lib/theme";
 
 export default async function AdminSettingsPage() {
   const session = await auth();
@@ -33,6 +36,25 @@ export default async function AdminSettingsPage() {
           automatically cancelled after this many days.
         </p>
         <SettingsForm initialDays={settings.paymentDeadlineDays} />
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 className="text-sm font-semibold text-gray-700 mb-1">GST Rate</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          The single shop-wide GST rate, used to calculate GST-inclusive prices for products and
+          purchase invoices wherever GST applies.
+        </p>
+        <GstSettingsForm initialPercent={settings.gstPercent} />
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 className="text-sm font-semibold text-gray-700 mb-1">App Theme Color</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Pick the accent color used for buttons, links and highlights across the whole site.
+        </p>
+        <ThemeSettingsForm
+          initialColor={isThemeColor(settings.themeColor) ? settings.themeColor : DEFAULT_THEME_COLOR}
+        />
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">

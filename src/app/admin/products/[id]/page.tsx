@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ProductForm } from "../ProductForm";
-import { updateProduct, deleteProduct } from "../../actions";
+import { updateProduct, deleteProduct, getGstPercent } from "../../actions";
 import { DeleteButton } from "./DeleteButton";
 import { isStaffRole, canManageCatalog } from "@/lib/roles";
 
@@ -19,12 +19,13 @@ export default async function EditProductPage({
 
   const { id } = await params;
   const { imageError } = await searchParams;
-  const [product, categories] = await Promise.all([
+  const [product, categories, gstPercent] = await Promise.all([
     prisma.product.findUnique({
       where: { id },
       include: { units: true, images: { orderBy: { sortOrder: "asc" } } },
     }),
     prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    getGstPercent(),
   ]);
 
   if (!product) notFound();
@@ -48,6 +49,7 @@ export default async function EditProductPage({
         action={updateWithId}
         submitLabel="Save Changes"
         productId={product.id}
+        gstPercent={gstPercent}
         initial={{
           name: product.name,
           categoryId: product.categoryId,
@@ -59,7 +61,10 @@ export default async function EditProductPage({
             label: u.label,
             packSize: u.packSize,
             price: String(u.price),
+            priceExGst: u.priceExGst != null ? String(u.priceExGst) : "",
+            gstApplicable: u.gstApplicable,
             costPrice: u.costPrice != null ? String(u.costPrice) : "",
+            costPriceIncGst: u.costPriceIncGst != null ? String(u.costPriceIncGst) : "",
           })),
         }}
       />

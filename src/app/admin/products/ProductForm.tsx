@@ -1,13 +1,48 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X, Image as ImageIcon, Info, Tag, Boxes } from "lucide-react";
 import { removeProductImage, addProductImagesToProduct } from "../actions";
 import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 import { SubmitButton } from "@/components/SubmitButton";
 
+const inputClass =
+  "w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-green/30 focus:border-brand-green";
+
 type Category = { id: string; name: string; parentId: string | null };
-type UnitRow = { id?: string; label: string; packSize: string; price: string; costPrice?: string };
+type UnitRow = {
+  id?: string;
+  label: string;
+  packSize: string;
+  price: string;
+  priceExGst?: string;
+  gstApplicable?: boolean;
+  costPrice?: string;
+  costPriceIncGst?: string;
+};
+
+function emptyUnit(): UnitRow {
+  return {
+    label: "",
+    packSize: "",
+    price: "",
+    priceExGst: "",
+    gstApplicable: false,
+    costPrice: "",
+    costPriceIncGst: "",
+  };
+}
+
+// Derives the GST-inclusive amount from an excl.-GST amount + the shop-wide
+// GST percentage (set in Settings). A 0% rate is a valid rate (not "unset"),
+// so this still computes (incl. = excl. when the rate is 0) — it only
+// bails out when there's no excl.-GST amount to work from yet.
+function calcIncGst(exGst: string, gstPercent: number): string {
+  const ex = Number(exGst);
+  if (!ex) return "";
+  return (ex * (1 + gstPercent / 100)).toFixed(2);
+}
+
 type ImageRow = { id: string; imageUrl: string };
 type PendingImage = { tempId: string; previewUrl: string };
 
@@ -16,6 +51,7 @@ type Props = {
   action: (formData: FormData) => void;
   submitLabel: string;
   productId?: string;
+  gstPercent: number;
   initial?: {
     name: string;
     sku?: string;
@@ -110,7 +146,10 @@ function ProductImages({ initialImages, productId }: { initialImages: ImageRow[]
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
-      <h3 className="text-sm font-semibold text-gray-700">Product Images</h3>
+      <div className="flex items-center gap-2 text-brand-navy">
+        <ImageIcon size={16} />
+        <h3 className="text-sm font-semibold">Product Images</h3>
+      </div>
       {images.length > 0 || pendingImages.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {images.map((img) => (
@@ -202,48 +241,85 @@ export function ProductForm({
   action,
   submitLabel,
   productId,
+  gstPercent,
   initial,
   showInventoryFields = false,
   showSku = false,
 }: Props) {
   const [units, setUnits] = useState<UnitRow[]>(
-    initial?.units?.length ? initial.units : [{ label: "Carton", packSize: "", price: "", costPrice: "" }]
+    initial?.units?.length ? initial.units : [{ ...emptyUnit(), label: "Carton" }]
   );
 
+  function updateUnit(i: number, patch: Partial<UnitRow>) {
+    setUnits((prev) => prev.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+  }
+
+  // Ticking GST on needs to immediately compute the incl.-GST fields from
+  // whatever excl.-GST values are already there (e.g. Cost Price, typed
+  // before GST was ticked) — otherwise those fields are stuck blank, since
+  // they're locked/read-only and can't be typed into directly.
+  function handleGstToggle(i: number, checked: boolean) {
+    setUnits((prev) =>
+      prev.map((row, idx) => {
+        if (idx !== i) return row;
+        if (!checked) return { ...row, gstApplicable: false };
+        const next = { ...row, gstApplicable: true };
+        const nextCostIncGst = calcIncGst(row.costPrice ?? "", gstPercent);
+        const nextPrice = calcIncGst(row.priceExGst ?? "", gstPercent);
+        if (nextCostIncGst) next.costPriceIncGst = nextCostIncGst;
+        if (nextPrice) next.price = nextPrice;
+        return next;
+      })
+    );
+  }
+
+  function handlePriceExGstChange(i: number, value: string) {
+    setUnits((prev) =>
+      prev.map((row, idx) => {
+        if (idx !== i) return row;
+        const next = { ...row, priceExGst: value };
+        const nextPrice = calcIncGst(value, gstPercent);
+        if (nextPrice) next.price = nextPrice;
+        return next;
+      })
+    );
+  }
+
+  function handleCostExGstChange(i: number, value: string) {
+    setUnits((prev) =>
+      prev.map((row, idx) => {
+        if (idx !== i) return row;
+        const next = { ...row, costPrice: value };
+        const nextCostIncGst = calcIncGst(value, gstPercent);
+        if (nextCostIncGst) next.costPriceIncGst = nextCostIncGst;
+        return next;
+      })
+    );
+  }
+
   return (
-    <form action={action} className="space-y-6 max-w-2xl" encType="multipart/form-data">
+    <form action={action} className="space-y-6 max-w-4xl" encType="multipart/form-data">
       <ProductImages initialImages={initial?.images ?? []} productId={productId} />
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+        <div className="flex items-center gap-2 text-brand-navy">
+          <Info size={16} />
+          <h3 className="text-sm font-semibold">Basic Information</h3>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-            <input
-              name="name"
-              defaultValue={initial?.name}
-              required
-              className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
-            />
+            <input name="name" defaultValue={initial?.name} required className={inputClass} />
           </div>
           {showSku && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
-              <input
-                name="sku"
-                defaultValue={initial?.sku}
-                required
-                className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
-              />
+              <input name="sku" defaultValue={initial?.sku} required className={inputClass} />
             </div>
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select
-              name="categoryId"
-              defaultValue={initial?.categoryId}
-              required
-              className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
-            >
+            <select name="categoryId" defaultValue={initial?.categoryId} required className={inputClass}>
               {categories
                 .filter((c) => !c.parentId)
                 .flatMap((c) => [
@@ -266,7 +342,7 @@ export function ProductForm({
             <select
               name="stockStatus"
               defaultValue={initial?.stockStatus ?? "IN_STOCK"}
-              className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
+              className={inputClass}
             >
               <option value="IN_STOCK">In Stock</option>
               <option value="NEW_STOCK">New Stock</option>
@@ -277,79 +353,187 @@ export function ProductForm({
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            name="description"
-            defaultValue={initial?.description}
-            rows={3}
-            className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
-          />
+          <textarea name="description" defaultValue={initial?.description} rows={3} className={inputClass} />
         </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700">Pricing Units</h3>
+          <div className="flex items-center gap-2 text-brand-navy">
+            <Tag size={16} />
+            <h3 className="text-sm font-semibold">Pricing Units</h3>
+          </div>
           <button
             type="button"
-            onClick={() => setUnits((u) => [...u, { label: "", packSize: "", price: "", costPrice: "" }])}
-            className="flex items-center gap-1 text-brand-green text-xs font-semibold"
+            onClick={() => setUnits((u) => [...u, emptyUnit()])}
+            className="flex items-center gap-1 text-brand-green text-xs font-semibold hover:text-brand-green-dark"
           >
             <Plus size={14} /> Add Unit
           </button>
         </div>
-        {units.map((u, i) => (
-          <div key={i} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-center">
-            {u.id && <input type="hidden" name="unitId" value={u.id} />}
-            <input
-              name="unitLabel"
-              placeholder="Label e.g. Carton"
-              defaultValue={u.label}
-              required
-              className="border border-gray-300 rounded px-2.5 py-1.5 text-sm bg-gray-50"
-            />
-            <input
-              name="unitPackSize"
-              placeholder="Pack size e.g. 24 X 200ML"
-              defaultValue={u.packSize}
-              className="border border-gray-300 rounded px-2.5 py-1.5 text-sm bg-gray-50"
-            />
-            <input
-              name="unitPrice"
-              type="number"
-              step="0.01"
-              placeholder="Selling Price"
-              defaultValue={u.price}
-              required
-              className="border border-gray-300 rounded px-2.5 py-1.5 text-sm bg-gray-50"
-            />
-            <input
-              name="unitCostPrice"
-              type="number"
-              step="0.01"
-              placeholder="Cost Price"
-              defaultValue={u.costPrice}
-              className="border border-gray-300 rounded px-2.5 py-1.5 text-sm bg-gray-50"
-            />
-            <button
-              type="button"
-              onClick={() => setUnits((prev) => prev.filter((_, idx) => idx !== i))}
-              className="text-gray-300 hover:text-brand-red"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        ))}
+        <p className="text-[11px] text-gray-400 -mt-1">
+          GST rate is {gstPercent}%, set shop-wide in{" "}
+          <a href="/admin/settings" className="text-brand-green hover:underline">
+            Settings
+          </a>
+          .
+        </p>
+        <div className="overflow-x-auto -mx-2 px-2">
+          <table className="w-full text-sm min-w-[880px] border-collapse">
+            <thead>
+              <tr className="text-left text-gray-400 text-xs border-b border-gray-100">
+                <th className="font-normal pb-2 pr-2">Label</th>
+                <th className="font-normal pb-2 pr-2">Pack Size</th>
+                <th className="font-normal pb-2 pr-2 w-16 text-center">GST</th>
+                <th className="font-normal pb-2 pr-2 w-36">Cost Price</th>
+                <th className="font-normal pb-2 pr-2 w-36">Selling Price</th>
+                <th className="font-normal pb-2 w-8"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {units.map((u, i) => (
+                <tr key={i} className="border-b border-gray-50 last:border-0">
+                  <td className="py-2 pr-2 align-top">
+                    {u.id && <input type="hidden" name="unitId" value={u.id} />}
+                    <input
+                      name="unitLabel"
+                      placeholder="e.g. Carton"
+                      defaultValue={u.label}
+                      required
+                      className={inputClass}
+                    />
+                  </td>
+                  <td className="py-2 pr-2 align-top">
+                    <input
+                      name="unitPackSize"
+                      placeholder="e.g. 24 X 200ML"
+                      defaultValue={u.packSize}
+                      className={inputClass}
+                    />
+                  </td>
+                  <td className="py-2 pr-2 align-top text-center pt-4">
+                    <div className="flex flex-col items-center gap-1">
+                      <input
+                        type="checkbox"
+                        name={`unitGstApplicable_${i}`}
+                        checked={u.gstApplicable ?? false}
+                        onChange={(e) => handleGstToggle(i, e.target.checked)}
+                        className="h-4 w-4 accent-brand-green"
+                      />
+                      {u.gstApplicable && (
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap">{gstPercent}%</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-2 pr-2 align-top">
+                    {u.gstApplicable ? (
+                      <div className="space-y-1">
+                        <input
+                          name="unitCostPrice"
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          placeholder="Excl. GST"
+                          value={u.costPrice ?? ""}
+                          onChange={(e) => handleCostExGstChange(i, e.target.value)}
+                          className={inputClass}
+                        />
+                        <input
+                          name={`unitCostPriceIncGst_${i}`}
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          readOnly
+                          title="Computed from Cost Price (excl. GST) and the GST rate in Settings"
+                          placeholder="Incl. GST"
+                          value={u.costPriceIncGst ?? ""}
+                          className={`${inputClass} bg-gray-100 text-gray-600 cursor-not-allowed`}
+                        />
+                      </div>
+                    ) : (
+                      <input
+                        name="unitCostPrice"
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        placeholder="0.00"
+                        value={u.costPrice ?? ""}
+                        onChange={(e) => updateUnit(i, { costPrice: e.target.value })}
+                        className={inputClass}
+                      />
+                    )}
+                  </td>
+                  <td className="py-2 pr-2 align-top">
+                    {u.gstApplicable ? (
+                      <div className="space-y-1">
+                        <input
+                          name={`unitPriceExGst_${i}`}
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          placeholder="Excl. GST"
+                          value={u.priceExGst ?? ""}
+                          onChange={(e) => handlePriceExGstChange(i, e.target.value)}
+                          className={inputClass}
+                        />
+                        <input
+                          name="unitPrice"
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          placeholder="Incl. GST"
+                          value={u.price}
+                          onChange={(e) => updateUnit(i, { price: e.target.value })}
+                          required
+                          className={inputClass}
+                        />
+                      </div>
+                    ) : (
+                      <input
+                        name="unitPrice"
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        placeholder="0.00"
+                        value={u.price}
+                        onChange={(e) => updateUnit(i, { price: e.target.value })}
+                        required
+                        className={inputClass}
+                      />
+                    )}
+                  </td>
+                  <td className="py-2 pt-4 align-top text-right">
+                    <button
+                      type="button"
+                      onClick={() => setUnits((prev) => prev.filter((_, idx) => idx !== i))}
+                      disabled={units.length === 1}
+                      title="Remove unit"
+                      className="text-gray-300 hover:text-brand-red disabled:opacity-30 disabled:hover:text-gray-300"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showInventoryFields && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 grid grid-cols-2 gap-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+          <div className="flex items-center gap-2 text-brand-navy">
+            <Boxes size={16} />
+            <h3 className="text-sm font-semibold">Inventory</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Opening Stock Quantity</label>
             <input
               name="quantityOnHand"
               type="number"
               defaultValue={initial?.quantityOnHand ?? 0}
-              className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
+              className={inputClass}
             />
           </div>
           <div>
@@ -358,8 +542,9 @@ export function ProductForm({
               name="lowStockThreshold"
               type="number"
               defaultValue={initial?.lowStockThreshold ?? 10}
-              className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
+              className={inputClass}
             />
+          </div>
           </div>
         </div>
       )}

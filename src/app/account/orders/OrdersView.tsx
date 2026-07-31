@@ -78,7 +78,7 @@ export function OrdersView({ orders }: { orders: Order[] }) {
               key={o.id}
               onClick={() => setSelectedId(o.id)}
               className={`w-full text-left px-4 py-3 hover:bg-gray-50 ${
-                selectedId === o.id ? "ring-1 ring-inset ring-brand-green bg-emerald-50/40" : ""
+                selectedId === o.id ? "ring-1 ring-inset ring-brand-green bg-blue-50/40" : ""
               }`}
             >
               <div className="flex items-center justify-between">

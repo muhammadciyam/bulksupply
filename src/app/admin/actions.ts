@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { saveUploadedImage, saveImageFile, saveImageFromUrl, removeUploadedImage } from "@/lib/image-upload";
+import { isThemeColor } from "@/lib/theme";
 import { StockStatus, OrderStatus, Role, AccountStatus, Prisma } from "@prisma/client";
 import {
   isStaffRole,
@@ -57,6 +58,18 @@ async function getPaymentDeadlineDays() {
     update: {},
   });
   return settings.paymentDeadlineDays;
+}
+
+// The single, shop-wide GST rate — set once in Settings and applied
+// everywhere GST calculations happen (product pricing, purchase invoices),
+// rather than being typed in ad-hoc on every form.
+export async function getGstPercent() {
+  const settings = await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton" },
+    update: {},
+  });
+  return settings.gstPercent;
 }
 
 function slugify(s: string) {
@@ -121,6 +134,7 @@ export async function addProductImagesToProduct(productId: string, formData: For
 
 export async function createProduct(formData: FormData) {
   await requireCatalogManager();
+  const gstPercent = await getGstPercent();
 
   const name = String(formData.get("name") ?? "").trim();
   const sku = String(formData.get("sku") ?? "").trim();
@@ -137,13 +151,24 @@ export async function createProduct(formData: FormData) {
   if (!name || !sku || !categoryId) return;
 
   const units = unitLabels
-    .map((label, i) => ({
-      label: label.trim(),
-      packSize: unitPackSizes[i]?.trim() ?? "",
-      price: Number(unitPrices[i] ?? 0),
-      costPrice: unitCostPrices[i]?.trim() ? Number(unitCostPrices[i]) : null,
-      isDefault: i === 0,
-    }))
+    .map((label, i) => {
+      const gstApplicable = formData.get(`unitGstApplicable_${i}`) === "on";
+      const priceExGstRaw = String(formData.get(`unitPriceExGst_${i}`) ?? "").trim();
+      const costPriceIncGstRaw = String(formData.get(`unitCostPriceIncGst_${i}`) ?? "").trim();
+      return {
+        label: label.trim(),
+        packSize: unitPackSizes[i]?.trim() ?? "",
+        price: Number(unitPrices[i] ?? 0),
+        gstApplicable,
+        priceExGst: gstApplicable && priceExGstRaw ? Number(priceExGstRaw) : null,
+        // The rate always comes from the current shop-wide setting, never
+        // from the client, so it can't drift from what Settings actually says.
+        gstRate: gstApplicable ? gstPercent : null,
+        costPrice: unitCostPrices[i]?.trim() ? Number(unitCostPrices[i]) : null,
+        costPriceIncGst: gstApplicable && costPriceIncGstRaw ? Number(costPriceIncGstRaw) : null,
+        isDefault: i === 0,
+      };
+    })
     .filter((u) => u.label && u.price >= 0);
 
   const product = await prisma.product.create({
@@ -177,6 +202,7 @@ export async function createProduct(formData: FormData) {
 
 export async function updateProduct(productId: string, formData: FormData) {
   await requireCatalogManager();
+  const gstPercent = await getGstPercent();
 
   const name = String(formData.get("name") ?? "").trim();
   const categoryId = String(formData.get("categoryId") ?? "");
@@ -207,15 +233,23 @@ export async function updateProduct(productId: string, formData: FormData) {
     const price = Number(unitPrices[i] ?? 0);
     const packSize = unitPackSizes[i]?.trim() ?? "";
     const costPrice = unitCostPrices[i]?.trim() ? Number(unitCostPrices[i]) : null;
+    const gstApplicable = formData.get(`unitGstApplicable_${i}`) === "on";
+    const priceExGstRaw = String(formData.get(`unitPriceExGst_${i}`) ?? "").trim();
+    const priceExGst = gstApplicable && priceExGstRaw ? Number(priceExGstRaw) : null;
+    // The rate always comes from the current shop-wide setting, never from
+    // the client, so it can't drift from what Settings actually says.
+    const gstRate = gstApplicable ? gstPercent : null;
+    const costPriceIncGstRaw = String(formData.get(`unitCostPriceIncGst_${i}`) ?? "").trim();
+    const costPriceIncGst = gstApplicable && costPriceIncGstRaw ? Number(costPriceIncGstRaw) : null;
     const id = unitIds[i];
     if (id) {
       await prisma.productUnit.update({
         where: { id },
-        data: { label, packSize, price, costPrice },
+        data: { label, packSize, price, costPrice, gstApplicable, priceExGst, gstRate, costPriceIncGst },
       });
     } else {
       await prisma.productUnit.create({
-        data: { productId, label, packSize, price, costPrice },
+        data: { productId, label, packSize, price, costPrice, gstApplicable, priceExGst, gstRate, costPriceIncGst },
       });
     }
   }
@@ -427,6 +461,34 @@ export async function updateAppSettings(paymentDeadlineDays: number) {
   revalidatePath("/admin/settings");
 }
 
+export async function updateGstPercent(gstPercent: number) {
+  await requireAdmin();
+  if (!Number.isFinite(gstPercent) || gstPercent < 0 || gstPercent > 100) {
+    throw new Error("GST percentage must be a number between 0 and 100");
+  }
+  await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton", gstPercent },
+    update: { gstPercent },
+  });
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin/products");
+  revalidatePath("/admin/purchases");
+}
+
+export async function updateThemeColor(themeColor: string) {
+  await requireAdmin();
+  if (!isThemeColor(themeColor)) {
+    throw new Error("Invalid theme color");
+  }
+  await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton", themeColor },
+    update: { themeColor },
+  });
+  revalidatePath("/", "layout");
+}
+
 export async function addBannerImage(slot: 1 | 2 | 3 | 4, formData: FormData) {
   await requireAdmin();
   if (slot < 1 || slot > 4) throw new Error("Invalid banner slot");
@@ -625,13 +687,13 @@ export async function createPurchaseInvoice(formData: FormData) {
   const productIds = formData.getAll("itemProductId") as string[];
   const quantities = formData.getAll("itemQuantity") as string[];
   const costsExGst = formData.getAll("itemCostExGst") as string[];
-  const costsIncGst = formData.getAll("itemCostIncGst") as string[];
 
   const items = productIds
     .map((productId, i) => {
       const quantity = Math.trunc(Number(quantities[i] ?? 0));
       const costPriceExGst = Number(costsExGst[i] ?? 0);
-      const costPriceIncGst = Number(costsIncGst[i] ?? 0);
+      const costIncGstRaw = String(formData.get(`itemCostIncGst_${i}`) ?? "").trim();
+      const costPriceIncGst = costIncGstRaw ? Number(costIncGstRaw) : costPriceExGst;
       return { productId, quantity, costPriceExGst, costPriceIncGst, lineTotal: quantity * costPriceIncGst };
     })
     .filter((it) => it.productId && it.quantity > 0 && it.costPriceExGst >= 0 && it.costPriceIncGst >= 0);
@@ -704,9 +766,17 @@ export async function approvePurchaseInvoice(invoiceId: string) {
         where: { productId: item.productId, isDefault: true },
       });
       if (defaultUnit) {
+        const hasGst = item.costPriceIncGst > item.costPriceExGst;
         await tx.productUnit.update({
           where: { id: defaultUnit.id },
-          data: { costPrice: item.costPriceExGst },
+          data: {
+            costPrice: item.costPriceExGst,
+            costPriceIncGst: hasGst ? item.costPriceIncGst : null,
+            gstApplicable: hasGst || defaultUnit.gstApplicable,
+            gstRate: hasGst
+              ? Math.round(((item.costPriceIncGst - item.costPriceExGst) / item.costPriceExGst) * 10000) / 100
+              : defaultUnit.gstRate,
+          },
         });
       }
     }

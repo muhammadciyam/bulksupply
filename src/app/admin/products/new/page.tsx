@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ProductForm } from "../ProductForm";
-import { createProduct } from "../../actions";
+import { createProduct, getGstPercent } from "../../actions";
 import { isStaffRole, canManageCatalog } from "@/lib/roles";
 
 export default async function NewProductPage() {
@@ -10,7 +10,10 @@ export default async function NewProductPage() {
   if (!session?.user || !isStaffRole(session.user.role)) redirect("/admin/login");
   if (!canManageCatalog(session.user.role)) redirect("/admin/orders");
 
-  const categories = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
+  const [categories, gstPercent] = await Promise.all([
+    prisma.category.findMany({ orderBy: { sortOrder: "asc" } }),
+    getGstPercent(),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -21,6 +24,7 @@ export default async function NewProductPage() {
         submitLabel="Create Product"
         showInventoryFields
         showSku
+        gstPercent={gstPercent}
       />
     </div>
   );

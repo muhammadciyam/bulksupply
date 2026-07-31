@@ -82,7 +82,7 @@ export function AccountsAdminTable({ accounts }: { accounts: AccountRow[] }) {
                       disabled={pending}
                       onClick={() => setStatus(a.id, "APPROVED" as AccountStatus)}
                       title="Approve"
-                      className="flex items-center gap-1 text-xs font-medium text-brand-green border border-emerald-200 hover:bg-emerald-50 px-2 py-1 rounded"
+                      className="flex items-center gap-1 text-xs font-medium text-brand-green border border-blue-200 hover:bg-blue-50 px-2 py-1 rounded"
                     >
                       <Check size={13} /> Approve
                     </button>

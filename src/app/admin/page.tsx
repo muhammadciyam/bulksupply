@@ -86,7 +86,7 @@ async function AdminDashboardHome({ customFrom, customTo }: { customFrom?: strin
   }
 
   const cards = [
-    { label: "Products", value: productCount, icon: Package, color: "bg-emerald-50 text-brand-green" },
+    { label: "Products", value: productCount, icon: Package, color: "bg-blue-50 text-brand-green" },
     { label: "Low Stock Items", value: lowStock.length, icon: AlertTriangle, color: "bg-red-50 text-brand-red" },
     { label: "Active Orders", value: activeOrders, icon: Truck, color: "bg-sky-50 text-sky-600" },
     { label: "Inventory SKUs", value: inventoryItems.length, icon: Boxes, color: "bg-amber-50 text-amber-600" },
@@ -228,7 +228,7 @@ async function CashierDashboard() {
   const cards = [
     { label: "Awaiting Confirmation", value: awaitingConfirmation, icon: Receipt, color: "bg-sky-50 text-sky-600" },
     { label: "Awaiting Price Quote", value: awaitingQuote, icon: Receipt, color: "bg-amber-50 text-amber-600" },
-    { label: "Awaiting Payment", value: awaitingPayment, icon: Receipt, color: "bg-emerald-50 text-brand-green" },
+    { label: "Awaiting Payment", value: awaitingPayment, icon: Receipt, color: "bg-blue-50 text-brand-green" },
     { label: "Awaiting Invoice", value: awaitingInvoice, icon: Receipt, color: "bg-red-50 text-brand-red" },
   ];
 
@@ -303,7 +303,7 @@ async function DeliveryDashboard({ driverId }: { driverId: string }) {
   const cards = [
     { label: "My Active Deliveries", value: myActive, icon: Truck, color: "bg-sky-50 text-sky-600" },
     { label: "Unassigned & Ready", value: unassigned, icon: AlertTriangle, color: "bg-amber-50 text-amber-600" },
-    { label: "Completed Today", value: completedToday, icon: CheckCircle2, color: "bg-emerald-50 text-brand-green" },
+    { label: "Completed Today", value: completedToday, icon: CheckCircle2, color: "bg-blue-50 text-brand-green" },
   ];
 
   return (

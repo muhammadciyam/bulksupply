@@ -43,7 +43,7 @@ export function Logo({
   iconOnly?: boolean;
 }) {
   const primary = variant === "dark" ? "text-white" : "text-brand-navy";
-  const accent = variant === "dark" ? "text-emerald-300" : "text-brand-blue";
+  const accent = variant === "dark" ? "text-sky-300" : "text-brand-blue";
 
   return (
     <Link href="/" className={`inline-flex items-center gap-2 shrink-0 ${className}`}>

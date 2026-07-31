@@ -51,7 +51,7 @@ export function PaymentSlipUpload({ orderId, slip }: { orderId: string; slip: Sl
 
   if (localSlip?.status === "VERIFIED") {
     return (
-      <div className="flex items-center gap-2 text-sm text-brand-green bg-emerald-50 rounded-md px-3 py-2">
+      <div className="flex items-center gap-2 text-sm text-brand-green bg-blue-50 rounded-md px-3 py-2">
         <CheckCircle2 size={16} /> Payment verified — {localSlip.fileName}
       </div>
     );

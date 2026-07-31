@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { prisma } from "@/lib/prisma";
+import { THEME_PRESETS, DEFAULT_THEME_COLOR, isThemeColor } from "@/lib/theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,15 +21,20 @@ export const metadata: Metadata = {
   description: "Bulk Supply wholesale ordering platform",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await prisma.appSettings.findUnique({ where: { id: "singleton" } });
+  const themeColor = settings && isThemeColor(settings.themeColor) ? settings.themeColor : DEFAULT_THEME_COLOR;
+  const preset = THEME_PRESETS[themeColor];
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      style={{ "--brand-green": preset.primary, "--brand-green-dark": preset.primaryDark } as React.CSSProperties}
     >
       <body className="min-h-full flex flex-col bg-gray-50">
         <Providers>

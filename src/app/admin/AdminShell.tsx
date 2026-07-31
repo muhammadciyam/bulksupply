@@ -132,7 +132,14 @@ export function AdminShell({
           </div>
           <div className="flex items-center gap-3 shrink-0">
             {canVerifyPayment(role) && <NotificationBell />}
-            <p className="text-sm font-medium text-gray-700 truncate max-w-[40%]">{userName}</p>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="hidden sm:flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-green/10 text-sm font-semibold text-brand-green">
+                {userName.charAt(0).toUpperCase()}
+              </span>
+              <p className="text-sm font-medium text-gray-700 truncate max-w-[140px] sm:max-w-[220px]">
+                {userName}
+              </p>
+            </div>
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-6 overflow-x-auto">{children}</main>

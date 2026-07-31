@@ -60,7 +60,7 @@ export default async function OrdersPage() {
   }));
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50 pb-16 md:pb-0">
       <AccountHeader />
       <main className="max-w-6xl mx-auto w-full px-4 py-8 flex-1">
         <OrdersView orders={serialized} />

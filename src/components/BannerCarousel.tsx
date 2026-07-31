@@ -19,6 +19,9 @@ function BannerTile({
   active: boolean;
   animation: string;
 }) {
+  // Only the active slide shows on mobile (single-slide-at-a-time), while
+  // desktop keeps all four tiles visible side by side.
+  const mobileVisibility = active ? "" : "hidden md:block";
   const [imgIndex, setImgIndex] = useState(0);
 
   // If this banner has multiple images, cycle through them on its own timer,
@@ -35,7 +38,7 @@ function BannerTile({
 
   return (
     <div
-      className={`relative h-32 md:h-44 rounded-lg overflow-hidden text-white p-4 flex flex-col justify-end transition-transform ${
+      className={`relative h-48 md:h-44 rounded-lg overflow-hidden text-white p-4 flex flex-col justify-end transition-transform ${mobileVisibility} ${
         image ? "bg-gray-800" : `bg-gradient-to-br ${slide.from} ${slide.to}`
       } ${active ? `ring-2 ring-brand-green ${animation}` : ""}`}
     >
@@ -68,23 +71,46 @@ export function BannerCarousel({ imagesBySlot = [] }: { imagesBySlot?: string[][
     return () => clearInterval(id);
   }, []);
 
+  function prev() {
+    setIndex((i) => (i - 1 + BANNER_SLIDES.length) % BANNER_SLIDES.length);
+  }
+  function next() {
+    setIndex((i) => (i + 1) % BANNER_SLIDES.length);
+  }
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {BANNER_SLIDES.map((s, i) => (
-        <BannerTile
-          key={s.slot}
-          slide={s}
-          images={imagesBySlot[i] ?? []}
-          active={i === index}
-          animation={ANIMATIONS[i]}
-        />
-      ))}
-      <div className="col-span-2 md:col-span-4 flex justify-center gap-1 -mt-1">
-        <button
-          aria-label="Previous"
-          onClick={() => setIndex((i) => (i - 1 + BANNER_SLIDES.length) % BANNER_SLIDES.length)}
-          className="p-1 text-gray-400 hover:text-brand-green"
-        >
+    <div className="relative">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        {BANNER_SLIDES.map((s, i) => (
+          <BannerTile
+            key={s.slot}
+            slide={s}
+            images={imagesBySlot[i] ?? []}
+            active={i === index}
+            animation={ANIMATIONS[i]}
+          />
+        ))}
+      </div>
+
+      {/* Mobile: arrows overlaid directly on the single visible slide */}
+      <button
+        aria-label="Previous"
+        onClick={prev}
+        className="md:hidden absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow"
+      >
+        <ChevronLeft size={18} />
+      </button>
+      <button
+        aria-label="Next"
+        onClick={next}
+        className="md:hidden absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow"
+      >
+        <ChevronRight size={18} />
+      </button>
+
+      {/* Desktop: arrows + dots below the grid */}
+      <div className="hidden md:flex justify-center gap-1 mt-2">
+        <button aria-label="Previous" onClick={prev} className="p-1 text-gray-400 hover:text-brand-green">
           <ChevronLeft size={16} />
         </button>
         {BANNER_SLIDES.map((s, i) => (
@@ -93,11 +119,7 @@ export function BannerCarousel({ imagesBySlot = [] }: { imagesBySlot?: string[][
             className={`h-1.5 w-1.5 rounded-full ${i === index ? "bg-brand-green" : "bg-gray-300"}`}
           />
         ))}
-        <button
-          aria-label="Next"
-          onClick={() => setIndex((i) => (i + 1) % BANNER_SLIDES.length)}
-          className="p-1 text-gray-400 hover:text-brand-green"
-        >
+        <button aria-label="Next" onClick={next} className="p-1 text-gray-400 hover:text-brand-green">
           <ChevronRight size={16} />
         </button>
       </div>

@@ -44,7 +44,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen pb-16 md:pb-0">
       <Header />
       <main className="max-w-4xl mx-auto w-full px-4 py-8 flex-1">
         <h1 className="text-xl font-bold text-brand-navy mb-6">Your Cart</h1>

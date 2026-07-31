@@ -14,7 +14,7 @@ export default async function AccountsPage() {
   });
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50 pb-16 md:pb-0">
       <AccountHeader />
       <main className="max-w-5xl mx-auto w-full px-4 py-8 flex-1">
         <AccountsList

@@ -5,7 +5,7 @@ export async function CategorySidebar({ activeSlug }: { activeSlug?: string }) {
   const categories = await getCategories();
 
   return (
-    <aside className="w-full md:w-56 shrink-0">
+    <aside className="hidden md:block md:w-56 shrink-0">
       <nav className="text-sm">
         <Link
           href="/"

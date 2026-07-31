@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { Logo } from "@/components/Logo";
 import { CategorySidebar } from "@/components/CategorySidebar";
+import { MobileCategoryFilter } from "@/components/MobileCategoryFilter";
 import { BannerCarousel } from "@/components/BannerCarousel";
 import { ProductCard } from "@/components/ProductCard";
 import { getStorefrontProducts, getBannerImages } from "@/lib/cached-data";
@@ -28,11 +29,14 @@ export default async function Home({
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen pb-16 md:pb-0">
       <Header />
       <main className="max-w-[1400px] mx-auto w-full px-4 py-4 flex-1">
         <BannerCarousel imagesBySlot={imagesBySlot} />
-        <div className="flex flex-col md:flex-row gap-6 mt-6">
+        <div className="mt-4">
+          <MobileCategoryFilter activeSlug={category} />
+        </div>
+        <div className="flex flex-col md:flex-row gap-6 mt-4 md:mt-6">
           <CategorySidebar activeSlug={category} />
           <section className="flex-1">
             {q && (

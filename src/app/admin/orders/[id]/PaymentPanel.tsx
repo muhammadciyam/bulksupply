@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { FileText, Check, X, Receipt } from "lucide-react";
+import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 
 type Slip = {
   fileName: string;
@@ -55,6 +56,7 @@ export function PaymentPanel({
       try {
         await onVerify(orderId);
       } catch (e) {
+        if (isNextNavigationSignal(e)) throw e;
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
@@ -68,6 +70,7 @@ export function PaymentPanel({
         setShowReject(false);
         setReason("");
       } catch (e) {
+        if (isNextNavigationSignal(e)) throw e;
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
@@ -79,6 +82,7 @@ export function PaymentPanel({
       try {
         await onGenerate(orderId);
       } catch (e) {
+        if (isNextNavigationSignal(e)) throw e;
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
@@ -125,7 +129,7 @@ export function PaymentPanel({
                     disabled={pending}
                     className="flex items-center gap-1.5 bg-brand-green hover:bg-brand-green-dark text-white text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-60"
                   >
-                    <Check size={14} /> Verify
+                    <Check size={14} /> {pending ? "Verifying..." : "Verify"}
                   </button>
                   <button
                     onClick={() => setShowReject((v) => !v)}
@@ -149,7 +153,7 @@ export function PaymentPanel({
                       disabled={pending || !reason.trim()}
                       className="bg-brand-red hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-60"
                     >
-                      Confirm Rejection
+                      {pending ? "Rejecting..." : "Confirm Rejection"}
                     </button>
                   </div>
                 )}
@@ -176,7 +180,7 @@ export function PaymentPanel({
             title={slip?.status !== "VERIFIED" ? "Payment must be verified first" : undefined}
             className="flex items-center gap-1.5 bg-brand-green hover:bg-brand-green-dark text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Receipt size={15} /> Generate Invoice
+            <Receipt size={15} /> {pending ? "Generating..." : "Generate Invoice"}
           </button>
         ) : (
           <p className="text-sm text-gray-400">No invoice generated yet.</p>

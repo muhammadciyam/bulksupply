@@ -1,7 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Truck } from "lucide-react";
+import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 
 export function AssignDriver({
   orderId,
@@ -14,12 +15,25 @@ export function AssignDriver({
   drivers: { id: string; name: string }[];
   onAssign: (orderId: string, staffId: string | null) => Promise<void>;
 }) {
+  const [driverId, setDriverId] = useState(currentDriverId ?? "");
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState("");
+
+  useEffect(() => setDriverId(currentDriverId ?? ""), [currentDriverId]);
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const staffId = e.target.value || null;
+    const prevDriverId = driverId;
+    setError("");
+    setDriverId(staffId ?? "");
     startTransition(async () => {
-      await onAssign(orderId, staffId);
+      try {
+        await onAssign(orderId, staffId);
+      } catch (err) {
+        if (isNextNavigationSignal(err)) throw err;
+        setDriverId(prevDriverId);
+        setError(err instanceof Error ? err.message : "Could not assign that driver");
+      }
     });
   }
 
@@ -27,7 +41,7 @@ export function AssignDriver({
     <div className="flex items-center gap-3">
       <Truck size={16} className="text-gray-400 shrink-0" />
       <select
-        defaultValue={currentDriverId ?? ""}
+        value={driverId}
         onChange={handleChange}
         disabled={pending}
         className="border border-gray-300 rounded px-3 py-2 bg-gray-50 text-sm disabled:opacity-60"
@@ -40,6 +54,7 @@ export function AssignDriver({
         ))}
       </select>
       {pending && <span className="text-xs text-gray-400">Saving...</span>}
+      {error && <span className="text-xs text-brand-red">{error}</span>}
     </div>
   );
 }

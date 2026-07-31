@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { changeOwnPassword } from "../actions";
+import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 
 export function ChangePasswordForm() {
   const [pending, startTransition] = useTransition();
@@ -27,6 +28,7 @@ export function ChangePasswordForm() {
         formRef.current?.reset();
         setSuccess(true);
       } catch (e) {
+        if (isNextNavigationSignal(e)) throw e;
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });

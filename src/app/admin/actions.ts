@@ -475,10 +475,17 @@ export async function upsertDelivery(orderId: string, formData: FormData) {
 export async function createCategory(formData: FormData) {
   await requireCatalogManager();
   const name = String(formData.get("name") ?? "").trim();
+  const parentId = String(formData.get("parentId") ?? "").trim() || null;
   if (!name) throw new Error("Category name is required");
 
+  if (parentId) {
+    const parent = await prisma.category.findUnique({ where: { id: parentId } });
+    if (!parent) throw new Error("Parent category not found");
+    if (parent.parentId) throw new Error("Subcategories can only be one level deep");
+  }
+
   try {
-    const category = await prisma.category.create({ data: { name, slug: slugify(name) } });
+    const category = await prisma.category.create({ data: { name, slug: slugify(name), parentId } });
     revalidatePath("/admin/products");
     revalidatePath("/");
     updateTag("categories");
@@ -493,9 +500,15 @@ export async function createCategory(formData: FormData) {
 
 export async function deleteCategory(categoryId: string) {
   await requireCatalogManager();
-  const count = await prisma.product.count({ where: { categoryId } });
-  if (count > 0) {
-    throw new Error(`Cannot delete — ${count} product${count === 1 ? "" : "s"} still use this category`);
+  const [productCount, childCount] = await Promise.all([
+    prisma.product.count({ where: { categoryId } }),
+    prisma.category.count({ where: { parentId: categoryId } }),
+  ]);
+  if (productCount > 0) {
+    throw new Error(`Cannot delete — ${productCount} product${productCount === 1 ? "" : "s"} still use this category`);
+  }
+  if (childCount > 0) {
+    throw new Error(`Cannot delete — ${childCount} subcategor${childCount === 1 ? "y" : "ies"} still exist under this category`);
   }
   await prisma.category.delete({ where: { id: categoryId } });
   revalidatePath("/admin/products");

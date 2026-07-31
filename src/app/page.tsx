@@ -4,7 +4,7 @@ import { CategorySidebar } from "@/components/CategorySidebar";
 import { MobileCategoryFilter } from "@/components/MobileCategoryFilter";
 import { BannerCarousel } from "@/components/BannerCarousel";
 import { ProductCard } from "@/components/ProductCard";
-import { getStorefrontProducts, getBannerImages } from "@/lib/cached-data";
+import { getStorefrontProducts, getBannerImages, getCategories } from "@/lib/cached-data";
 import { Prisma } from "@prisma/client";
 
 export default async function Home({
@@ -15,8 +15,20 @@ export default async function Home({
   const { category, q } = await searchParams;
 
   const where: Prisma.ProductWhereInput = {};
-  if (category) where.category = { slug: category };
   if (q) where.name = { contains: q };
+
+  const categories = category ? await getCategories() : [];
+  if (category) {
+    const matched = categories.find((c) => c.slug === category);
+    if (matched) {
+      // A parent category also includes products from its subcategories;
+      // a subcategory (or a category with no children) matches only itself.
+      const childIds = categories.filter((c) => c.parentId === matched.id).map((c) => c.id);
+      where.categoryId = childIds.length > 0 ? { in: [matched.id, ...childIds] } : matched.id;
+    } else {
+      where.category = { slug: category };
+    }
+  }
 
   const [products, bannerImageRows] = await Promise.all([
     getStorefrontProducts(where),

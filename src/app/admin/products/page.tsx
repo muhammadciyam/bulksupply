@@ -42,7 +42,12 @@ export default async function AdminProductsPage() {
       </div>
 
       <CategoryManager
-        initialCategories={categories.map((c) => ({ id: c.id, name: c.name, productCount: c._count.products }))}
+        initialCategories={categories.map((c) => ({
+          id: c.id,
+          name: c.name,
+          productCount: c._count.products,
+          parentId: c.parentId,
+        }))}
       />
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">

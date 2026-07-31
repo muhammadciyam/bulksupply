@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { updateAppSettings } from "../actions";
+import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 
 export function SettingsForm({ initialDays }: { initialDays: number }) {
   const [days, setDays] = useState(String(initialDays));
@@ -18,6 +19,7 @@ export function SettingsForm({ initialDays }: { initialDays: number }) {
         await updateAppSettings(Number(days));
         setSuccess(true);
       } catch (e) {
+        if (isNextNavigationSignal(e)) throw e;
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });

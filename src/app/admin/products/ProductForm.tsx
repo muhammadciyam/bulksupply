@@ -4,8 +4,9 @@ import { useRef, useState, useTransition } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { removeProductImage, addProductImagesToProduct } from "../actions";
 import { isNextNavigationSignal } from "@/lib/is-redirect-error";
+import { SubmitButton } from "@/components/SubmitButton";
 
-type Category = { id: string; name: string };
+type Category = { id: string; name: string; parentId: string | null };
 type UnitRow = { id?: string; label: string; packSize: string; price: string };
 type ImageRow = { id: string; imageUrl: string };
 type PendingImage = { tempId: string; previewUrl: string };
@@ -183,12 +184,12 @@ function ProductImages({ initialImages, productId }: { initialImages: ImageRow[]
             >
               {busy ? "Adding..." : "Add"}
             </button>
-            <button
-              type="submit"
-              className="border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-2 rounded hover:bg-gray-50"
+            <SubmitButton
+              pendingLabel="Saving..."
+              className="border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-2 rounded hover:bg-gray-50 disabled:opacity-60"
             >
               Save
-            </button>
+            </SubmitButton>
           </div>
         )}
       </div>
@@ -243,11 +244,21 @@ export function ProductForm({
               required
               className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
             >
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {categories
+                .filter((c) => !c.parentId)
+                .flatMap((c) => [
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>,
+                  ...categories
+                    .filter((sub) => sub.parentId === c.id)
+                    .map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {"    "}
+                        {sub.name}
+                      </option>
+                    )),
+                ])}
             </select>
           </div>
           <div>
@@ -345,12 +356,12 @@ export function ProductForm({
         </div>
       )}
 
-      <button
-        type="submit"
-        className="bg-brand-green hover:bg-brand-green-dark text-white font-semibold px-6 py-2.5 rounded"
+      <SubmitButton
+        pendingLabel="Saving..."
+        className="bg-brand-green hover:bg-brand-green-dark text-white font-semibold px-6 py-2.5 rounded disabled:opacity-60"
       >
         {submitLabel}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

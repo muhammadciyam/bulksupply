@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { SlidersHorizontal, X } from "lucide-react";
 
-type Category = { id: string; name: string; slug: string };
+type Category = { id: string; name: string; slug: string; parentId: string | null };
 
 export function MobileCategoryFilterClient({
   categories,
@@ -15,6 +15,7 @@ export function MobileCategoryFilterClient({
 }) {
   const [open, setOpen] = useState(false);
   const active = categories.find((c) => c.slug === activeSlug);
+  const topLevel = categories.filter((c) => !c.parentId);
 
   return (
     <div className="md:hidden">
@@ -72,18 +73,38 @@ export function MobileCategoryFilterClient({
               All Categories
             </Link>
             <div className="border-t border-gray-100 mt-1 pt-1">
-              {categories.map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/?category=${c.slug}`}
-                  onClick={() => setOpen(false)}
-                  className={`block py-2.5 text-sm uppercase tracking-wide ${
-                    activeSlug === c.slug ? "text-brand-green font-semibold" : "text-gray-700"
-                  }`}
-                >
-                  {c.name}
-                </Link>
-              ))}
+              {topLevel.map((c) => {
+                const children = categories.filter((sub) => sub.parentId === c.id);
+                return (
+                  <div key={c.id}>
+                    <Link
+                      href={`/?category=${c.slug}`}
+                      onClick={() => setOpen(false)}
+                      className={`block py-2.5 text-sm uppercase tracking-wide ${
+                        activeSlug === c.slug ? "text-brand-green font-semibold" : "text-gray-700"
+                      }`}
+                    >
+                      {c.name}
+                    </Link>
+                    {children.length > 0 && (
+                      <div className="pl-4">
+                        {children.map((sub) => (
+                          <Link
+                            key={sub.id}
+                            href={`/?category=${sub.slug}`}
+                            onClick={() => setOpen(false)}
+                            className={`block py-2 text-xs uppercase tracking-wide ${
+                              activeSlug === sub.slug ? "text-brand-green font-semibold" : "text-gray-500"
+                            }`}
+                          >
+                            {sub.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

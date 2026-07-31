@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Check, Lock } from "lucide-react";
 import { ORDER_STEPS } from "@/lib/format";
 import { updateOrderStatus } from "../../actions";
+import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 import type { OrderStatus } from "@prisma/client";
 
 export function StatusControls({
@@ -15,21 +16,33 @@ export function StatusControls({
   currentStatus: string;
   allowedStatuses: OrderStatus[];
 }) {
+  const [status, setLocalStatus] = useState(currentStatus);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
-  const stepIndex = ORDER_STEPS.findIndex((s) => s.key === currentStatus);
-  const isCancelled = currentStatus === "CANCELLED";
-  const isComplete = currentStatus === "COMPLETE";
+
+  // Stay in sync if the server sends a fresh currentStatus (e.g. after
+  // revalidation, or a change made by another staff member).
+  useEffect(() => setLocalStatus(currentStatus), [currentStatus]);
+
+  const stepIndex = ORDER_STEPS.findIndex((s) => s.key === status);
+  const isCancelled = status === "CANCELLED";
+  const isComplete = status === "COMPLETE";
   const isFinalized = isCancelled || isComplete;
   const canCancel = allowedStatuses.includes("CANCELLED" as OrderStatus) && !isFinalized;
 
-  function setStatus(status: OrderStatus) {
-    if (!allowedStatuses.includes(status) || isFinalized) return;
+  function setStatus(next: OrderStatus) {
+    if (!allowedStatuses.includes(next) || isFinalized) return;
     setError("");
+    const prevStatus = status;
+    // Optimistic: reflect the new status immediately, revert if the
+    // server rejects it (e.g. a permission check fails).
+    setLocalStatus(next);
     startTransition(async () => {
       try {
-        await updateOrderStatus(orderId, status);
-      } catch {
+        await updateOrderStatus(orderId, next);
+      } catch (err) {
+        if (isNextNavigationSignal(err)) throw err;
+        setLocalStatus(prevStatus);
         setError("You don't have permission to set this status.");
       }
     });

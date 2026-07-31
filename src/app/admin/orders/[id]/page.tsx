@@ -6,6 +6,7 @@ import { upsertDelivery, assignDelivery, verifyPaymentSlip, rejectPaymentSlip, g
 import { StatusControls } from "./StatusControls";
 import { AssignDriver } from "./AssignDriver";
 import { PaymentPanel } from "./PaymentPanel";
+import { SubmitButton } from "@/components/SubmitButton";
 import { isStaffRole, canAssignDelivery, canVerifyPayment, ORDER_STATUS_PERMISSIONS, type StaffRole } from "@/lib/roles";
 
 export default async function AdminOrderDetailPage({
@@ -199,12 +200,12 @@ export default async function AdminOrderDetailPage({
             />
           </div>
         </div>
-        <button
-          type="submit"
-          className="bg-brand-green hover:bg-brand-green-dark text-white font-semibold px-6 py-2 rounded text-sm"
+        <SubmitButton
+          pendingLabel="Saving..."
+          className="bg-brand-green hover:bg-brand-green-dark text-white font-semibold px-6 py-2 rounded text-sm disabled:opacity-60"
         >
           Save Delivery
-        </button>
+        </SubmitButton>
       </form>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6">

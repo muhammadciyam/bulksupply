@@ -14,6 +14,7 @@ const STATUS_STYLE: Record<string, string> = {
 export function AccountsList({ initialAccounts }: { initialAccounts: Account[] }) {
   const [accounts, setAccounts] = useState(initialAccounts);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState("");
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -26,6 +27,7 @@ export function AccountsList({ initialAccounts }: { initialAccounts: Account[] }
           <Plus size={16} /> Add Account
         </button>
       </div>
+      {error && <p className="text-sm text-brand-red mb-3">{error}</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {accounts.map((a) => (
           <div key={a.id} className="bg-gray-50 rounded-md p-4">
@@ -46,6 +48,13 @@ export function AccountsList({ initialAccounts }: { initialAccounts: Account[] }
         <AddAccountModal
           onClose={() => setOpen(false)}
           onCreated={(a) => setAccounts((prev) => [...prev, a])}
+          onReplace={(tempId, a) =>
+            setAccounts((prev) => prev.map((acc) => (acc.id === tempId ? a : acc)))
+          }
+          onRollback={(tempId, message) => {
+            setAccounts((prev) => prev.filter((acc) => acc.id !== tempId));
+            setError(message);
+          }}
         />
       )}
     </div>
@@ -55,38 +64,47 @@ export function AccountsList({ initialAccounts }: { initialAccounts: Account[] }
 function AddAccountModal({
   onClose,
   onCreated,
+  onReplace,
+  onRollback,
 }: {
   onClose: () => void;
   onCreated: (a: Account) => void;
+  onReplace: (tempId: string, a: Account) => void;
+  onRollback: (tempId: string, message: string) => void;
 }) {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
-  const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
     setSaving(true);
+
+    // Optimistic: add it (and close the modal) immediately with the known
+    // server-side defaults, swap in the real record once the request
+    // resolves, or roll it back (with an error shown on the accounts list,
+    // since this modal will already be closed) if the request fails.
+    const tempId = `pending-${Date.now()}`;
+    onCreated({ id: tempId, name, type: "BUSINESS", location, status: "PENDING" });
+    onClose();
+
     const res = await fetch("/api/accounts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, location }),
     });
     const data = await res.json();
-    setSaving(false);
     if (!res.ok) {
-      setError(data.error ?? "Something went wrong");
+      onRollback(tempId, data.error ?? "Something went wrong adding that account");
       return;
     }
-    onCreated({
+    onReplace(tempId, {
       id: data.account.id,
       name: data.account.name,
       type: data.account.type,
       location: data.account.location,
       status: data.account.status,
     });
-    onClose();
   }
 
   return (
@@ -111,7 +129,6 @@ function AddAccountModal({
             required
             className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50"
           />
-          {error && <p className="text-sm text-brand-red">{error}</p>}
           <button
             type="submit"
             disabled={saving}

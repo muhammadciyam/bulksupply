@@ -184,6 +184,11 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         @media print {
           .no-print { display: none !important; }
           body { background: white; }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
         }
       `}</style>
     </div>

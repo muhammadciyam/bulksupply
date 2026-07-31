@@ -172,6 +172,13 @@ export function PaymentPanel({
             <p className="text-xs text-gray-400">
               Issued {new Date(invoice.issuedAt).toLocaleString()}
             </p>
+            <Link
+              href={`/account/orders/${orderId}/invoice`}
+              target="_blank"
+              className="inline-flex items-center gap-1.5 text-brand-green font-semibold text-xs hover:underline mt-1"
+            >
+              <FileText size={13} /> View &amp; Print Invoice
+            </Link>
           </div>
         ) : canGenerate ? (
           <button

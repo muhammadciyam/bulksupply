@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FileText, Check, X, Receipt } from "lucide-react";
+import { FileText, Check, X, Receipt, UploadCloud } from "lucide-react";
 import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 
 type Slip = {
@@ -45,10 +46,14 @@ export function PaymentPanel({
   onReject: (orderId: string, reason: string) => Promise<void>;
   onGenerate: (orderId: string) => Promise<void>;
 }) {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [showReject, setShowReject] = useState(false);
   const [reason, setReason] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   function handleVerify() {
     setError("");

@@ -526,11 +526,20 @@ export async function createStaffUser(formData: FormData) {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: { firstName, lastName, email, phone, passwordHash, role },
   });
 
   revalidatePath("/admin/staff");
+  return {
+    id: user.id,
+    name: `${user.firstName} ${user.lastName}`,
+    email: user.email,
+    phone: user.phone,
+    role: user.role as StaffRole,
+    roleLabel: ROLE_LABELS[user.role as StaffRole],
+    isActive: user.isActive,
+  };
 }
 
 export async function deactivateStaffUser(userId: string) {

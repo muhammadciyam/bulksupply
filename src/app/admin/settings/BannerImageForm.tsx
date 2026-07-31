@@ -2,8 +2,10 @@
 
 import { useRef, useState, useTransition } from "react";
 import { addBannerImage, removeBannerImage } from "../actions";
+import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 
 type BannerImg = { id: string; imageUrl: string };
+type PendingImg = { tempId: string; previewUrl: string };
 
 export function BannerImageForm({
   slot,
@@ -17,6 +19,7 @@ export function BannerImageForm({
   initialImages: BannerImg[];
 }) {
   const [images, setImages] = useState<BannerImg[]>(initialImages);
+  const [pendingImages, setPendingImages] = useState<PendingImg[]>([]);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
@@ -25,24 +28,39 @@ export function BannerImageForm({
     e.preventDefault();
     setError("");
     const formData = new FormData(e.currentTarget);
+    const file = formData.get("imageFile");
+    const url = String(formData.get("imageUrl") ?? "").trim();
+    const previewUrl = file instanceof File && file.size > 0 ? URL.createObjectURL(file) : url;
+    const tempId = `pending-${Date.now()}`;
+
+    if (previewUrl) setPendingImages((imgs) => [...imgs, { tempId, previewUrl }]);
+    formRef.current?.reset();
+
     startTransition(async () => {
       try {
         const created = await addBannerImage(slot, formData);
         setImages((imgs) => [...imgs, created]);
-        formRef.current?.reset();
       } catch (err) {
+        if (isNextNavigationSignal(err)) throw err;
         setError(err instanceof Error ? err.message : "Something went wrong");
+      } finally {
+        setPendingImages((imgs) => imgs.filter((i) => i.tempId !== tempId));
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
       }
     });
   }
 
   function handleRemove(imageId: string) {
     setError("");
+    const prevImages = images;
+    // Optimistic: hide immediately, restore it if the server call fails.
+    setImages((imgs) => imgs.filter((i) => i.id !== imageId));
     startTransition(async () => {
       try {
         await removeBannerImage(imageId);
-        setImages((imgs) => imgs.filter((i) => i.id !== imageId));
       } catch (err) {
+        if (isNextNavigationSignal(err)) throw err;
+        setImages(prevImages);
         setError(err instanceof Error ? err.message : "Something went wrong");
       }
     });
@@ -55,7 +73,7 @@ export function BannerImageForm({
         <p className="text-xs text-gray-400">{subtitle}</p>
       </div>
 
-      {images.length > 0 ? (
+      {images.length > 0 || pendingImages.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {images.map((img) => (
             <div key={img.id} className="relative h-16 w-24 rounded overflow-hidden border border-gray-200 shrink-0">
@@ -70,6 +88,15 @@ export function BannerImageForm({
               >
                 ×
               </button>
+            </div>
+          ))}
+          {pendingImages.map((p) => (
+            <div key={p.tempId} className="relative h-16 w-24 rounded overflow-hidden border border-gray-200 shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.previewUrl} alt="" className="h-full w-full object-cover opacity-50" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              </div>
             </div>
           ))}
         </div>

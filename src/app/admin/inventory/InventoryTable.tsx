@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Minus, Plus } from "lucide-react";
 import { adjustInventory, setInventoryThreshold } from "../actions";
+import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 
 type Item = {
   id: string;
@@ -17,28 +18,47 @@ export function InventoryTable({ items }: { items: Item[] }) {
   const [rows, setRows] = useState(items);
   const [pending, startTransition] = useTransition();
   const [amounts, setAmounts] = useState<Record<string, string>>({});
+  const [error, setError] = useState("");
 
   function applyAdjustment(id: string, change: number) {
     if (change === 0) return;
+    const prevRows = rows;
+    setError("");
     setRows((prev) =>
       prev.map((r) =>
         r.id === id ? { ...r, quantityOnHand: Math.max(0, r.quantityOnHand + change) } : r
       )
     );
     startTransition(async () => {
-      await adjustInventory(id, change, change > 0 ? "Stock received" : "Stock removed");
+      try {
+        await adjustInventory(id, change, change > 0 ? "Stock received" : "Stock removed");
+      } catch (err) {
+        if (isNextNavigationSignal(err)) throw err;
+        setRows(prevRows);
+        setError(err instanceof Error ? err.message : "Could not save that change");
+      }
     });
   }
 
   function applyThreshold(id: string, threshold: number) {
+    const prevRows = rows;
+    setError("");
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, lowStockThreshold: threshold } : r)));
     startTransition(async () => {
-      await setInventoryThreshold(id, threshold);
+      try {
+        await setInventoryThreshold(id, threshold);
+      } catch (err) {
+        if (isNextNavigationSignal(err)) throw err;
+        setRows(prevRows);
+        setError(err instanceof Error ? err.message : "Could not save that change");
+      }
     });
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+    <div className="space-y-2">
+      {error && <p className="text-sm text-brand-red">{error}</p>}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
       <table className="w-full text-sm min-w-[760px]">
         <thead>
           <tr className="text-left text-gray-400 text-xs border-b border-gray-100">
@@ -104,6 +124,7 @@ export function InventoryTable({ items }: { items: Item[] }) {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

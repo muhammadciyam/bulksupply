@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Check, X, RotateCcw } from "lucide-react";
 import { updateBusinessAccountStatus } from "../actions";
+import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 import type { AccountStatus } from "@prisma/client";
 
 type AccountRow = {
@@ -25,16 +26,27 @@ const STATUS_STYLE: Record<string, string> = {
 export function AccountsAdminTable({ accounts }: { accounts: AccountRow[] }) {
   const [rows, setRows] = useState(accounts);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState("");
 
   function setStatus(id: string, status: AccountStatus) {
+    const prevRows = rows;
+    setError("");
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     startTransition(async () => {
-      await updateBusinessAccountStatus(id, status);
+      try {
+        await updateBusinessAccountStatus(id, status);
+      } catch (err) {
+        if (isNextNavigationSignal(err)) throw err;
+        setRows(prevRows);
+        setError(err instanceof Error ? err.message : "Could not update that account's status");
+      }
     });
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+    <div className="space-y-2">
+      {error && <p className="text-sm text-brand-red">{error}</p>}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
       <table className="w-full text-sm min-w-[820px]">
         <thead>
           <tr className="text-left text-gray-400 text-xs border-b border-gray-100">
@@ -108,6 +120,7 @@ export function AccountsAdminTable({ accounts }: { accounts: AccountRow[] }) {
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

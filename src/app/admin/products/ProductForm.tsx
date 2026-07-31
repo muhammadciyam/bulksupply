@@ -3,10 +3,12 @@
 import { useRef, useState, useTransition } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { removeProductImage, addProductImagesToProduct } from "../actions";
+import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 
 type Category = { id: string; name: string };
 type UnitRow = { id?: string; label: string; packSize: string; price: string };
 type ImageRow = { id: string; imageUrl: string };
+type PendingImage = { tempId: string; previewUrl: string };
 
 type Props = {
   categories: Category[];
@@ -36,6 +38,7 @@ function ProductImages({ initialImages, productId }: { initialImages: ImageRow[]
   // surrounding form to be submitted.
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const [addedImages, setAddedImages] = useState<ImageRow[]>([]);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [busy, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -46,12 +49,19 @@ function ProductImages({ initialImages, productId }: { initialImages: ImageRow[]
 
   function handleRemove(id: string) {
     setError("");
+    // Optimistic: hide immediately, restore it if the server call fails.
+    setRemovedIds((ids) => new Set(ids).add(id));
     startTransition(async () => {
       try {
         await removeProductImage(id);
-        setRemovedIds((ids) => new Set(ids).add(id));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Something went wrong");
+        if (isNextNavigationSignal(err)) throw err;
+        setRemovedIds((ids) => {
+          const next = new Set(ids);
+          next.delete(id);
+          return next;
+        });
+        setError(err instanceof Error ? err.message : "Could not remove that image");
       }
     });
   }
@@ -60,26 +70,39 @@ function ProductImages({ initialImages, productId }: { initialImages: ImageRow[]
     if (!productId) return;
     setError("");
 
-    const files = fileInputRef.current?.files;
+    const files = Array.from(fileInputRef.current?.files ?? []);
     const url = urlInputRef.current?.value.trim();
-    if (!files?.length && !url) {
+    if (!files.length && !url) {
       setError("Choose a file or paste an image URL first");
       return;
     }
 
     const formData = new FormData();
-    for (const file of Array.from(files ?? [])) formData.append("imageFile", file);
+    for (const file of files) formData.append("imageFile", file);
     if (url) formData.append("imageUrl", url);
+
+    // Optimistic: show a preview tile immediately (local blob preview for
+    // files, the pasted URL itself for the URL case), swapped for the real
+    // stored image — or removed — once the server responds.
+    const staged: PendingImage[] = [
+      ...files.map((f, i) => ({ tempId: `pending-${Date.now()}-${i}`, previewUrl: URL.createObjectURL(f) })),
+      ...(url ? [{ tempId: `pending-${Date.now()}-url`, previewUrl: url }] : []),
+    ];
+    setPendingImages((prev) => [...prev, ...staged]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (urlInputRef.current) urlInputRef.current.value = "";
+    setPendingCount(0);
 
     startTransition(async () => {
       try {
         const added = await addProductImagesToProduct(productId, formData);
         setAddedImages((prev) => [...prev, ...added]);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        if (urlInputRef.current) urlInputRef.current.value = "";
-        setPendingCount(0);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Something went wrong");
+        if (isNextNavigationSignal(err)) throw err;
+        setError(err instanceof Error ? err.message : "Could not add that image");
+      } finally {
+        setPendingImages((prev) => prev.filter((p) => !staged.some((s) => s.tempId === p.tempId)));
+        for (const s of staged) URL.revokeObjectURL(s.previewUrl);
       }
     });
   }
@@ -87,7 +110,7 @@ function ProductImages({ initialImages, productId }: { initialImages: ImageRow[]
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
       <h3 className="text-sm font-semibold text-gray-700">Product Images</h3>
-      {images.length > 0 ? (
+      {images.length > 0 || pendingImages.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {images.map((img) => (
             <div key={img.id} className="relative h-20 w-20 rounded-md overflow-hidden border border-gray-200 shrink-0">
@@ -102,6 +125,15 @@ function ProductImages({ initialImages, productId }: { initialImages: ImageRow[]
               >
                 <X size={11} />
               </button>
+            </div>
+          ))}
+          {pendingImages.map((p) => (
+            <div key={p.tempId} className="relative h-20 w-20 rounded-md overflow-hidden border border-gray-200 shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.previewUrl} alt="" className="h-full w-full object-cover opacity-50" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              </div>
             </div>
           ))}
         </div>

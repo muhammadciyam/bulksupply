@@ -3,7 +3,8 @@
 import { useRef, useState, useTransition } from "react";
 import { Trash2, UserPlus, RotateCcw } from "lucide-react";
 import { createStaffUser, deactivateStaffUser, reactivateStaffUser } from "../actions";
-import type { StaffRole } from "@/lib/roles";
+import { ROLE_LABELS, type StaffRole } from "@/lib/roles";
+import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 
 type StaffMember = {
   id: string;
@@ -35,12 +36,27 @@ export function StaffManager({
 
   function handleCreate(formData: FormData) {
     setError("");
+    const role = (String(formData.get("role") ?? "CASHIER")) as StaffRole;
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMember: StaffMember = {
+      id: tempId,
+      name: `${formData.get("firstName")} ${formData.get("lastName")}`,
+      email: String(formData.get("email") ?? ""),
+      phone: String(formData.get("phone") ?? ""),
+      role,
+      roleLabel: ROLE_LABELS[role],
+      isActive: true,
+    };
+    setMembers((prev) => [...prev, optimisticMember]);
+    formRef.current?.reset();
+
     startTransition(async () => {
       try {
-        await createStaffUser(formData);
-        formRef.current?.reset();
-        window.location.reload();
+        const created = await createStaffUser(formData);
+        setMembers((prev) => prev.map((m) => (m.id === tempId ? created : m)));
       } catch (e) {
+        if (isNextNavigationSignal(e)) throw e;
+        setMembers((prev) => prev.filter((m) => m.id !== tempId));
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
@@ -48,21 +64,36 @@ export function StaffManager({
 
   function handleDeactivate(id: string) {
     if (!confirm("Deactivate this staff member's access? They can be reactivated later.")) return;
+    setError("");
     setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, isActive: false } : m)));
     startTransition(async () => {
-      await deactivateStaffUser(id);
+      try {
+        await deactivateStaffUser(id);
+      } catch (e) {
+        if (isNextNavigationSignal(e)) throw e;
+        setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, isActive: true } : m)));
+        setError(e instanceof Error ? e.message : "Could not deactivate that member");
+      }
     });
   }
 
   function handleReactivate(id: string) {
+    setError("");
     setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, isActive: true } : m)));
     startTransition(async () => {
-      await reactivateStaffUser(id);
+      try {
+        await reactivateStaffUser(id);
+      } catch (e) {
+        if (isNextNavigationSignal(e)) throw e;
+        setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, isActive: false } : m)));
+        setError(e instanceof Error ? e.message : "Could not reactivate that member");
+      }
     });
   }
 
   return (
     <div className="space-y-6 max-w-3xl">
+      {error && <p className="text-sm text-brand-red">{error}</p>}
       <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

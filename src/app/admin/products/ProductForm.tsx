@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Plus, Trash2, X } from "lucide-react";
-import { removeProductImage } from "../actions";
+import { removeProductImage, addProductImagesToProduct } from "../actions";
 
 type Category = { id: string; name: string };
 type UnitRow = { id?: string; label: string; packSize: string; price: string };
@@ -12,6 +12,7 @@ type Props = {
   categories: Category[];
   action: (formData: FormData) => void;
   submitLabel: string;
+  productId?: string;
   initial?: {
     name: string;
     sku?: string;
@@ -27,17 +28,21 @@ type Props = {
   showSku?: boolean;
 };
 
-function ProductImages({ initialImages }: { initialImages: ImageRow[] }) {
+function ProductImages({ initialImages, productId }: { initialImages: ImageRow[]; productId?: string }) {
   // `initialImages` is re-fetched by the server after every save (new images
   // included), so it — not local state — stays the source of truth here.
-  // Only removals need client state, since they take effect immediately
-  // without waiting for the surrounding form to be submitted.
+  // Removals and instant adds (when editing an existing product) need client
+  // state too, since they take effect immediately without waiting for the
+  // surrounding form to be submitted.
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
+  const [addedImages, setAddedImages] = useState<ImageRow[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
-  const [removing, startTransition] = useTransition();
+  const [busy, startTransition] = useTransition();
   const [error, setError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
 
-  const images = initialImages.filter((img) => !removedIds.has(img.id));
+  const images = [...initialImages, ...addedImages].filter((img) => !removedIds.has(img.id));
 
   function handleRemove(id: string) {
     setError("");
@@ -45,6 +50,34 @@ function ProductImages({ initialImages }: { initialImages: ImageRow[] }) {
       try {
         await removeProductImage(id);
         setRemovedIds((ids) => new Set(ids).add(id));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      }
+    });
+  }
+
+  function handleAdd() {
+    if (!productId) return;
+    setError("");
+
+    const files = fileInputRef.current?.files;
+    const url = urlInputRef.current?.value.trim();
+    if (!files?.length && !url) {
+      setError("Choose a file or paste an image URL first");
+      return;
+    }
+
+    const formData = new FormData();
+    for (const file of Array.from(files ?? [])) formData.append("imageFile", file);
+    if (url) formData.append("imageUrl", url);
+
+    startTransition(async () => {
+      try {
+        const added = await addProductImagesToProduct(productId, formData);
+        setAddedImages((prev) => [...prev, ...added]);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        if (urlInputRef.current) urlInputRef.current.value = "";
+        setPendingCount(0);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
       }
@@ -63,7 +96,7 @@ function ProductImages({ initialImages }: { initialImages: ImageRow[] }) {
               <button
                 type="button"
                 onClick={() => handleRemove(img.id)}
-                disabled={removing}
+                disabled={busy}
                 aria-label="Remove image"
                 className="absolute top-0.5 right-0.5 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-brand-red disabled:opacity-50"
               >
@@ -81,6 +114,7 @@ function ProductImages({ initialImages }: { initialImages: ImageRow[] }) {
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">Add photos from your computer</label>
           <input
+            ref={fileInputRef}
             type="file"
             name="imageFile"
             multiple
@@ -90,7 +124,8 @@ function ProductImages({ initialImages }: { initialImages: ImageRow[] }) {
           />
           {pendingCount > 0 && (
             <p className="text-[11px] text-gray-400 mt-1">
-              {pendingCount} file{pendingCount === 1 ? "" : "s"} selected — added when you save.
+              {pendingCount} file{pendingCount === 1 ? "" : "s"} selected
+              {!productId && " — added when you save"}.
             </p>
           )}
         </div>
@@ -98,12 +133,32 @@ function ProductImages({ initialImages }: { initialImages: ImageRow[] }) {
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">Image URL</label>
           <input
+            ref={urlInputRef}
             type="url"
             name="imageUrl"
             placeholder="https://example.com/product.jpg"
             className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 text-sm"
           />
         </div>
+
+        {productId && (
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={busy}
+              className="bg-brand-green hover:bg-brand-green-dark text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-60"
+            >
+              {busy ? "Adding..." : "Add"}
+            </button>
+            <button
+              type="submit"
+              className="border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-2 rounded hover:bg-gray-50"
+            >
+              Save
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -113,6 +168,7 @@ export function ProductForm({
   categories,
   action,
   submitLabel,
+  productId,
   initial,
   showInventoryFields = false,
   showSku = false,
@@ -123,7 +179,7 @@ export function ProductForm({
 
   return (
     <form action={action} className="space-y-6 max-w-2xl" encType="multipart/form-data">
-      <ProductImages initialImages={initial?.images ?? []} />
+      <ProductImages initialImages={initial?.images ?? []} productId={productId} />
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -47,6 +47,7 @@ export default async function EditProductPage({
         categories={categories}
         action={updateWithId}
         submitLabel="Save Changes"
+        productId={product.id}
         initial={{
           name: product.name,
           categoryId: product.categoryId,

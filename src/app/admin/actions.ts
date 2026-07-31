@@ -68,10 +68,12 @@ function slugify(s: string) {
 
 // Adds every newly selected file (multi-select) and/or pasted URL as new
 // ProductImage rows — this only ever adds to a product's gallery, existing
-// images are removed individually via removeProductImage.
+// images are removed individually via removeProductImage. Returns the rows
+// that were added so callers can reflect them immediately in the UI.
 async function addProductImages(productId: string, formData: FormData) {
   const files = formData.getAll("imageFile").filter((f): f is File => f instanceof File && f.size > 0);
   const url = String(formData.get("imageUrl") ?? "").trim();
+  const added: { id: string; imageUrl: string }[] = [];
 
   const last = await prisma.productImage.findFirst({ where: { productId }, orderBy: { sortOrder: "desc" } });
   let nextOrder = (last?.sortOrder ?? -1) + 1;
@@ -80,7 +82,8 @@ async function addProductImages(productId: string, formData: FormData) {
     const row = await prisma.productImage.create({ data: { productId, imageUrl: "", sortOrder: nextOrder++ } });
     try {
       const imageUrl = await saveImageFile("products", row.id, file);
-      await prisma.productImage.update({ where: { id: row.id }, data: { imageUrl } });
+      const updated = await prisma.productImage.update({ where: { id: row.id }, data: { imageUrl } });
+      added.push({ id: updated.id, imageUrl: updated.imageUrl });
     } catch (err) {
       await prisma.productImage.delete({ where: { id: row.id } }).catch(() => {});
       throw err;
@@ -91,12 +94,28 @@ async function addProductImages(productId: string, formData: FormData) {
     const row = await prisma.productImage.create({ data: { productId, imageUrl: "", sortOrder: nextOrder++ } });
     try {
       const imageUrl = await saveImageFromUrl("products", row.id, url);
-      await prisma.productImage.update({ where: { id: row.id }, data: { imageUrl } });
+      const updated = await prisma.productImage.update({ where: { id: row.id }, data: { imageUrl } });
+      added.push({ id: updated.id, imageUrl: updated.imageUrl });
     } catch (err) {
       await prisma.productImage.delete({ where: { id: row.id } }).catch(() => {});
       throw err;
     }
   }
+
+  return added;
+}
+
+// Instant version used by the "Add" button in the product edit form — adds
+// images to an existing product right away, independent of the surrounding
+// form's Save button.
+export async function addProductImagesToProduct(productId: string, formData: FormData) {
+  await requireCatalogManager();
+  const added = await addProductImages(productId, formData);
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${productId}`);
+  revalidatePath("/");
+  updateTag("products");
+  return added;
 }
 
 export async function createProduct(formData: FormData) {

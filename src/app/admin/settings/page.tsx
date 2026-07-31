@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { SettingsForm } from "./SettingsForm";
 import { GstSettingsForm } from "./GstSettingsForm";
+import { BusinessDetailsForm } from "./BusinessDetailsForm";
 import { ThemeSettingsForm } from "./ThemeSettingsForm";
 import { BannerImageForm } from "./BannerImageForm";
 import { BANNER_SLIDES } from "@/lib/banners";
@@ -36,6 +37,22 @@ export default async function AdminSettingsPage() {
           automatically cancelled after this many days.
         </p>
         <SettingsForm initialDays={settings.paymentDeadlineDays} />
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 className="text-sm font-semibold text-gray-700 mb-1">Business Details</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Shown on the header of customer invoices generated after payment verification.
+        </p>
+        <BusinessDetailsForm
+          initial={{
+            businessName: settings.businessName,
+            businessAddress: settings.businessAddress,
+            businessPhone: settings.businessPhone,
+            businessEmail: settings.businessEmail,
+            businessGstNo: settings.businessGstNo,
+          }}
+        />
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6">

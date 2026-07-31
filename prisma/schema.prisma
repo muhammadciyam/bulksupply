@@ -247,10 +247,15 @@ model Notification {
 }
 
 model AppSettings {
-  id                  String @id @default("singleton")
-  paymentDeadlineDays Int    @default(3)
-  gstPercent          Float  @default(0)
-  themeColor          String @default("blue")
+  id                  String  @id @default("singleton")
+  paymentDeadlineDays Int     @default(3)
+  gstPercent          Float   @default(0)
+  themeColor          String  @default("blue")
+  businessName        String  @default("Bulk Supply")
+  businessAddress     String?
+  businessPhone       String?
+  businessEmail       String?
+  businessGstNo       String? // the shop's own GST/tax registration number, shown on outgoing customer invoices
 }
 
 model BannerImage {

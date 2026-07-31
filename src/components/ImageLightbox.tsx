@@ -81,6 +81,7 @@ export function ImageLightbox({
   function onMouseDown(e: React.MouseEvent) {
     if (scale <= MIN_SCALE) return;
     dragRef.current = { x: e.clientX, y: e.clientY };
+    setIsDragging(true);
   }
 
   function onMouseMove(e: React.MouseEvent) {
@@ -94,6 +95,7 @@ export function ImageLightbox({
 
   function endDrag() {
     dragRef.current = null;
+    setIsDragging(false);
   }
 
   function touchDistance(touches: React.TouchList) {
@@ -106,6 +108,7 @@ export function ImageLightbox({
       pinchRef.current = touchDistance(e.touches);
     } else if (e.touches.length === 1 && scale > MIN_SCALE) {
       dragRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      setIsDragging(true);
     }
   }
 
@@ -128,7 +131,10 @@ export function ImageLightbox({
 
   function onTouchEnd(e: React.TouchEvent) {
     if (e.touches.length < 2) pinchRef.current = null;
-    if (e.touches.length === 0) dragRef.current = null;
+    if (e.touches.length === 0) {
+      dragRef.current = null;
+      setIsDragging(false);
+    }
   }
 
   function onImageClick(e: React.MouseEvent) {
@@ -190,7 +196,7 @@ export function ImageLightbox({
           className="relative h-full w-full"
           style={{
             transform: `scale(${scale}) translate(${pos.x}px, ${pos.y}px)`,
-            transition: dragRef.current ? "none" : "transform 0.15s ease-out",
+            transition: isDragging ? "none" : "transform 0.15s ease-out",
             cursor: scale > MIN_SCALE ? "grab" : "zoom-in",
           }}
           onDoubleClick={toggleZoom}

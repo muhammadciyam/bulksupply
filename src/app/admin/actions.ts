@@ -72,6 +72,24 @@ export async function getGstPercent() {
   return settings.gstPercent;
 }
 
+// The shop's own identity — shown on the header of customer invoices. Kept
+// separate from PurchaseInvoice.gstNumber, which records a *supplier's* GST
+// number on incoming stock purchases, not the shop's own.
+export async function getBusinessDetails() {
+  const settings = await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton" },
+    update: {},
+  });
+  return {
+    businessName: settings.businessName,
+    businessAddress: settings.businessAddress,
+    businessPhone: settings.businessPhone,
+    businessEmail: settings.businessEmail,
+    businessGstNo: settings.businessGstNo,
+  };
+}
+
 function slugify(s: string) {
   return s
     .toLowerCase()
@@ -226,6 +244,16 @@ export async function updateProduct(productId: string, formData: FormData) {
   const unitPackSizes = formData.getAll("unitPackSize") as string[];
   const unitPrices = formData.getAll("unitPrice") as string[];
   const unitCostPrices = formData.getAll("unitCostPrice") as string[];
+
+  // Units removed client-side (the trash icon in ProductForm) simply aren't
+  // present in the submission — delete anything not in the kept id set so
+  // they don't survive as orphaned rows.
+  const keptUnitIds = unitIds.filter(Boolean);
+  if (keptUnitIds.length > 0) {
+    await prisma.productUnit.deleteMany({ where: { productId, id: { notIn: keptUnitIds } } });
+  } else {
+    await prisma.productUnit.deleteMany({ where: { productId } });
+  }
 
   for (let i = 0; i < unitLabels.length; i++) {
     const label = unitLabels[i]?.trim();
@@ -487,6 +515,28 @@ export async function updateThemeColor(themeColor: string) {
     update: { themeColor },
   });
   revalidatePath("/", "layout");
+}
+
+export async function updateBusinessDetails(formData: FormData) {
+  await requireAdmin();
+  const businessName = String(formData.get("businessName") ?? "").trim();
+  const businessAddress = String(formData.get("businessAddress") ?? "").trim() || null;
+  const businessPhone = String(formData.get("businessPhone") ?? "").trim() || null;
+  const businessEmail = String(formData.get("businessEmail") ?? "").trim() || null;
+  const businessGstNo = String(formData.get("businessGstNo") ?? "").trim() || null;
+
+  if (!businessName) {
+    throw new Error("Business name is required");
+  }
+
+  const data = { businessName, businessAddress, businessPhone, businessEmail, businessGstNo };
+  await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    create: { id: "singleton", ...data },
+    update: data,
+  });
+  revalidatePath("/admin/settings");
+  revalidatePath("/account/orders");
 }
 
 export async function addBannerImage(slot: 1 | 2 | 3 | 4, formData: FormData) {

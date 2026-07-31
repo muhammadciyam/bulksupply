@@ -7,7 +7,11 @@ import { isStaffRole } from "@/lib/roles";
 import { expireOverduePayments } from "@/lib/auto-cancel";
 import { Package, Boxes, AlertTriangle, Truck, Receipt, CheckCircle2 } from "lucide-react";
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string }>;
+}) {
   const session = await auth();
   if (!session?.user || !isStaffRole(session.user.role)) redirect("/admin/login");
 
@@ -15,10 +19,32 @@ export default async function AdminDashboard() {
 
   if (session.user.role === "CASHIER") return <CashierDashboard />;
   if (session.user.role === "DELIVERY") return <DeliveryDashboard driverId={session.user.id} />;
-  return <AdminDashboardHome />;
+  const { from, to } = await searchParams;
+  return <AdminDashboardHome customFrom={from} customTo={to} />;
 }
 
-async function AdminDashboardHome() {
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+async function getSalesForRange(start: Date, end: Date) {
+  const where = { createdAt: { gte: start, lt: end }, status: { not: "CANCELLED" as const } };
+  const [agg, orderCount] = await Promise.all([
+    prisma.orderItem.aggregate({ _sum: { amount: true }, where: { order: where } }),
+    prisma.order.count({ where }),
+  ]);
+  return { revenue: agg._sum.amount ?? 0, orderCount };
+}
+
+function SalesCard({ label, revenue, orderCount }: { label: string; revenue: number; orderCount: number }) {
+  return (
+    <div className="bg-gray-50 border border-gray-100 rounded-lg p-4">
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="text-xl font-bold text-brand-green">MVR {formatMVR(revenue)}</p>
+      <p className="text-xs text-gray-400">{orderCount} order{orderCount === 1 ? "" : "s"}</p>
+    </div>
+  );
+}
+
+async function AdminDashboardHome({ customFrom, customTo }: { customFrom?: string; customTo?: string }) {
   const [productCount, inventoryItems, orders, activeOrders] = await Promise.all([
     prisma.product.count(),
     prisma.inventoryItem.findMany({ include: { product: true } }),
@@ -31,7 +57,33 @@ async function AdminDashboardHome() {
   ]);
 
   const lowStock = inventoryItems.filter((i) => i.quantityOnHand <= i.lowStockThreshold);
-  const totalRevenue = await prisma.orderItem.aggregate({ _sum: { amount: true } });
+
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const rangeEnd = new Date(todayStart);
+  rangeEnd.setDate(rangeEnd.getDate() + 1);
+
+  const daysSinceMonday = (todayStart.getDay() + 6) % 7;
+  const weekStart = new Date(todayStart);
+  weekStart.setDate(weekStart.getDate() - daysSinceMonday);
+
+  const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
+
+  const [today, week, month, lifetimeRevenue] = await Promise.all([
+    getSalesForRange(todayStart, rangeEnd),
+    getSalesForRange(weekStart, rangeEnd),
+    getSalesForRange(monthStart, rangeEnd),
+    prisma.orderItem.aggregate({ _sum: { amount: true }, where: { order: { status: { not: "CANCELLED" } } } }),
+  ]);
+
+  let custom: { revenue: number; orderCount: number } | null = null;
+  if (customFrom && customTo && DATE_ONLY.test(customFrom) && DATE_ONLY.test(customTo)) {
+    const from = new Date(`${customFrom}T00:00:00`);
+    const to = new Date(`${customTo}T00:00:00`);
+    to.setDate(to.getDate() + 1);
+    if (from < to) custom = await getSalesForRange(from, to);
+  }
 
   const cards = [
     { label: "Products", value: productCount, icon: Package, color: "bg-emerald-50 text-brand-green" },
@@ -58,10 +110,56 @@ async function AdminDashboardHome() {
         ))}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-5">
-        <p className="text-sm text-gray-500">Total revenue (all orders)</p>
-        <p className="text-2xl font-bold text-brand-green">
-          MVR {formatMVR(totalRevenue._sum.amount ?? 0)}
+      <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h2 className="font-semibold text-brand-navy text-sm">Sales</h2>
+          <form action="/admin" className="flex items-end flex-wrap gap-2">
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-1">From</label>
+              <input
+                type="date"
+                name="from"
+                defaultValue={customFrom}
+                max={new Date().toISOString().slice(0, 10)}
+                className="border border-gray-300 rounded px-2.5 py-1.5 text-xs bg-gray-50"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-gray-500 mb-1">To</label>
+              <input
+                type="date"
+                name="to"
+                defaultValue={customTo}
+                max={new Date().toISOString().slice(0, 10)}
+                className="border border-gray-300 rounded px-2.5 py-1.5 text-xs bg-gray-50"
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-brand-green hover:bg-brand-green-dark text-white text-xs font-semibold px-3 py-1.5 rounded"
+            >
+              Show
+            </button>
+            {(customFrom || customTo) && (
+              <Link href="/admin" className="text-xs text-gray-400 hover:text-brand-red px-1 py-1.5">
+                Clear
+              </Link>
+            )}
+          </form>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <SalesCard label="Today" revenue={today.revenue} orderCount={today.orderCount} />
+          <SalesCard label="This Week" revenue={week.revenue} orderCount={week.orderCount} />
+          <SalesCard label="This Month" revenue={month.revenue} orderCount={month.orderCount} />
+        </div>
+
+        {custom && (
+          <SalesCard label={`${customFrom} to ${customTo}`} revenue={custom.revenue} orderCount={custom.orderCount} />
+        )}
+
+        <p className="text-xs text-gray-400 border-t border-gray-100 pt-3">
+          Lifetime total: MVR {formatMVR(lifetimeRevenue._sum.amount ?? 0)}
         </p>
       </div>
 

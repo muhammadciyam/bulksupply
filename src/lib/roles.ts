@@ -56,6 +56,12 @@ export function canVerifyPayment(role: string | undefined): boolean {
   return role === "ADMIN" || role === "CASHIER";
 }
 
+// Admin and Cashier can both record a supplier purchase invoice, but only
+// Admin approving it actually applies the stock increase + cost price update.
+export function canApprovePurchaseInvoice(role: string | undefined): boolean {
+  return role === "ADMIN";
+}
+
 // Where a staff member lands after logging into the admin area.
 // The dashboard is role-aware, so every staff role lands there.
 export function defaultAdminRoute(role: string | undefined): string {

@@ -13,6 +13,7 @@ import {
   canAssignDelivery,
   canManageCatalog,
   canVerifyPayment,
+  canApprovePurchaseInvoice,
   ROLE_LABELS,
   type StaffRole,
 } from "@/lib/roles";
@@ -603,4 +604,161 @@ export async function updateBusinessAccountStatus(accountId: string, status: Acc
     data: { status },
   });
   revalidatePath("/admin/accounts");
+}
+
+export async function createPurchaseInvoice(formData: FormData) {
+  const session = await requireCatalogManager();
+
+  const shopName = String(formData.get("shopName") ?? "").trim();
+  const gstNumber = String(formData.get("gstNumber") ?? "").trim() || null;
+  const invoiceNumber = String(formData.get("invoiceNumber") ?? "").trim();
+  const invoiceDateStr = String(formData.get("invoiceDate") ?? "");
+
+  if (!shopName || !invoiceNumber || !invoiceDateStr) {
+    throw new Error("Shop name, invoice number, and date are required");
+  }
+  const invoiceDate = new Date(invoiceDateStr);
+  if (Number.isNaN(invoiceDate.getTime())) {
+    throw new Error("Invalid invoice date");
+  }
+
+  const productIds = formData.getAll("itemProductId") as string[];
+  const quantities = formData.getAll("itemQuantity") as string[];
+  const costsExGst = formData.getAll("itemCostExGst") as string[];
+  const costsIncGst = formData.getAll("itemCostIncGst") as string[];
+
+  const items = productIds
+    .map((productId, i) => {
+      const quantity = Math.trunc(Number(quantities[i] ?? 0));
+      const costPriceExGst = Number(costsExGst[i] ?? 0);
+      const costPriceIncGst = Number(costsIncGst[i] ?? 0);
+      return { productId, quantity, costPriceExGst, costPriceIncGst, lineTotal: quantity * costPriceIncGst };
+    })
+    .filter((it) => it.productId && it.quantity > 0 && it.costPriceExGst >= 0 && it.costPriceIncGst >= 0);
+
+  if (items.length === 0) {
+    throw new Error("Add at least one line item with a product, quantity, and cost price");
+  }
+
+  const subtotal = items.reduce((sum, it) => sum + it.quantity * it.costPriceExGst, 0);
+  const totalAmount = items.reduce((sum, it) => sum + it.lineTotal, 0);
+  const gstTotal = totalAmount - subtotal;
+
+  const role = session.user.role as StaffRole;
+  const createdBy = `${session.user.name} (${ROLE_LABELS[role]})`;
+
+  const invoice = await prisma.purchaseInvoice.create({
+    data: {
+      shopName,
+      gstNumber,
+      invoiceNumber,
+      invoiceDate,
+      subtotal,
+      gstTotal,
+      totalAmount,
+      createdBy,
+      items: { create: items },
+    },
+  });
+
+  revalidatePath("/admin/purchases");
+  redirect(`/admin/purchases/${invoice.id}`);
+}
+
+export async function approvePurchaseInvoice(invoiceId: string) {
+  const session = await requireAdmin();
+  if (!canApprovePurchaseInvoice(session.user.role)) {
+    throw new Error("Only an admin can approve a purchase invoice");
+  }
+
+  const invoice = await prisma.purchaseInvoice.findUnique({
+    where: { id: invoiceId },
+    include: { items: true },
+  });
+  if (!invoice) throw new Error("Purchase invoice not found");
+  if (invoice.status !== "PENDING") {
+    throw new Error("This invoice has already been processed");
+  }
+
+  const role = session.user.role as StaffRole;
+  const approvedBy = `${session.user.name} (${ROLE_LABELS[role]})`;
+
+  await prisma.$transaction(async (tx) => {
+    for (const item of invoice.items) {
+      const inventoryItem = await tx.inventoryItem.upsert({
+        where: { productId: item.productId },
+        create: { productId: item.productId, quantityOnHand: item.quantity },
+        update: { quantityOnHand: { increment: item.quantity } },
+      });
+      await tx.inventoryAdjustment.create({
+        data: {
+          inventoryItemId: inventoryItem.id,
+          change: item.quantity,
+          reason: `Purchase invoice #${invoice.invoiceNumber} (${invoice.shopName}) approved`,
+        },
+      });
+
+      // Roll the latest purchase cost into the product's default unit so
+      // margins/inventory reports reflect the newest cost price.
+      const defaultUnit = await tx.productUnit.findFirst({
+        where: { productId: item.productId, isDefault: true },
+      });
+      if (defaultUnit) {
+        await tx.productUnit.update({
+          where: { id: defaultUnit.id },
+          data: { costPrice: item.costPriceExGst },
+        });
+      }
+    }
+
+    await tx.purchaseInvoice.update({
+      where: { id: invoiceId },
+      data: { status: "APPROVED", approvedBy, approvedAt: new Date() },
+    });
+  });
+
+  revalidatePath("/admin/purchases");
+  revalidatePath(`/admin/purchases/${invoiceId}`);
+  revalidatePath("/admin/inventory");
+  revalidatePath("/admin/products");
+}
+
+export async function rejectPurchaseInvoice(invoiceId: string, reason: string) {
+  const session = await requireAdmin();
+  if (!canApprovePurchaseInvoice(session.user.role)) {
+    throw new Error("Only an admin can reject a purchase invoice");
+  }
+  if (!reason.trim()) throw new Error("A rejection reason is required");
+
+  const invoice = await prisma.purchaseInvoice.findUnique({ where: { id: invoiceId } });
+  if (!invoice) throw new Error("Purchase invoice not found");
+  if (invoice.status !== "PENDING") {
+    throw new Error("This invoice has already been processed");
+  }
+
+  const role = session.user.role as StaffRole;
+  await prisma.purchaseInvoice.update({
+    where: { id: invoiceId },
+    data: {
+      status: "REJECTED",
+      rejectionReason: reason.trim(),
+      approvedBy: `${session.user.name} (${ROLE_LABELS[role]})`,
+      approvedAt: new Date(),
+    },
+  });
+
+  revalidatePath("/admin/purchases");
+  revalidatePath(`/admin/purchases/${invoiceId}`);
+}
+
+export async function deletePurchaseInvoice(invoiceId: string) {
+  await requireCatalogManager();
+  const invoice = await prisma.purchaseInvoice.findUnique({ where: { id: invoiceId } });
+  if (!invoice) return;
+  if (invoice.status !== "PENDING") {
+    throw new Error("Only a pending invoice can be deleted");
+  }
+  await prisma.purchaseInvoice.delete({ where: { id: invoiceId } });
+  revalidatePath("/admin/purchases");
+  redirect("/admin/purchases");
 }

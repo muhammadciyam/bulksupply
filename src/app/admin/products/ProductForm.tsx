@@ -7,7 +7,7 @@ import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 import { SubmitButton } from "@/components/SubmitButton";
 
 type Category = { id: string; name: string; parentId: string | null };
-type UnitRow = { id?: string; label: string; packSize: string; price: string };
+type UnitRow = { id?: string; label: string; packSize: string; price: string; costPrice?: string };
 type ImageRow = { id: string; imageUrl: string };
 type PendingImage = { tempId: string; previewUrl: string };
 
@@ -207,7 +207,7 @@ export function ProductForm({
   showSku = false,
 }: Props) {
   const [units, setUnits] = useState<UnitRow[]>(
-    initial?.units?.length ? initial.units : [{ label: "Carton", packSize: "", price: "" }]
+    initial?.units?.length ? initial.units : [{ label: "Carton", packSize: "", price: "", costPrice: "" }]
   );
 
   return (
@@ -291,14 +291,14 @@ export function ProductForm({
           <h3 className="text-sm font-semibold text-gray-700">Pricing Units</h3>
           <button
             type="button"
-            onClick={() => setUnits((u) => [...u, { label: "", packSize: "", price: "" }])}
+            onClick={() => setUnits((u) => [...u, { label: "", packSize: "", price: "", costPrice: "" }])}
             className="flex items-center gap-1 text-brand-green text-xs font-semibold"
           >
             <Plus size={14} /> Add Unit
           </button>
         </div>
         {units.map((u, i) => (
-          <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
+          <div key={i} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-center">
             {u.id && <input type="hidden" name="unitId" value={u.id} />}
             <input
               name="unitLabel"
@@ -317,9 +317,17 @@ export function ProductForm({
               name="unitPrice"
               type="number"
               step="0.01"
-              placeholder="Price"
+              placeholder="Selling Price"
               defaultValue={u.price}
               required
+              className="border border-gray-300 rounded px-2.5 py-1.5 text-sm bg-gray-50"
+            />
+            <input
+              name="unitCostPrice"
+              type="number"
+              step="0.01"
+              placeholder="Cost Price"
+              defaultValue={u.costPrice}
               className="border border-gray-300 rounded px-2.5 py-1.5 text-sm bg-gray-50"
             />
             <button

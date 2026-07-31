@@ -121,6 +121,7 @@ model ProductUnit {
   label     String // e.g. "Dozen", "Carton", "Packet"
   packSize  String // e.g. "12 X 200ML"
   price     Float
+  costPrice Float?
   isDefault Boolean @default(false)
 
   @@unique([productId, label])

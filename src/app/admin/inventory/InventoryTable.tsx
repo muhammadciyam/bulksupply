@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { Minus, Plus } from "lucide-react";
-import { adjustInventory, setInventoryThreshold } from "../actions";
+import { adjustInventory, setInventoryThreshold, setUnitCostPrice } from "../actions";
 import { isNextNavigationSignal } from "@/lib/is-redirect-error";
+import { formatMVR } from "@/lib/format";
 
 type Item = {
   id: string;
@@ -12,6 +13,10 @@ type Item = {
   category: string;
   quantityOnHand: number;
   lowStockThreshold: number;
+  unitId: string | null;
+  unitLabel: string | null;
+  sellingPrice: number | null;
+  costPrice: number | null;
 };
 
 export function InventoryTable({ items }: { items: Item[] }) {
@@ -55,11 +60,26 @@ export function InventoryTable({ items }: { items: Item[] }) {
     });
   }
 
+  function applyCostPrice(rowId: string, unitId: string, costPrice: number | null) {
+    const prevRows = rows;
+    setError("");
+    setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, costPrice } : r)));
+    startTransition(async () => {
+      try {
+        await setUnitCostPrice(unitId, costPrice);
+      } catch (err) {
+        if (isNextNavigationSignal(err)) throw err;
+        setRows(prevRows);
+        setError(err instanceof Error ? err.message : "Could not save that change");
+      }
+    });
+  }
+
   return (
     <div className="space-y-2">
       {error && <p className="text-sm text-brand-red">{error}</p>}
       <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
-      <table className="w-full text-sm min-w-[760px]">
+      <table className="w-full text-sm min-w-[960px]">
         <thead>
           <tr className="text-left text-gray-400 text-xs border-b border-gray-100">
             <th className="font-normal px-4 py-3">Product</th>
@@ -67,6 +87,8 @@ export function InventoryTable({ items }: { items: Item[] }) {
             <th className="font-normal px-4 py-3">Stock on Hand</th>
             <th className="font-normal px-4 py-3">Adjust</th>
             <th className="font-normal px-4 py-3">Low Stock Threshold</th>
+            <th className="font-normal px-4 py-3">Selling Price</th>
+            <th className="font-normal px-4 py-3">Cost Price</th>
           </tr>
         </thead>
         <tbody>
@@ -118,6 +140,28 @@ export function InventoryTable({ items }: { items: Item[] }) {
                     onBlur={(e) => applyThreshold(r.id, Number(e.target.value) || 0)}
                     className="w-16 border border-gray-200 rounded px-1.5 py-1 text-xs"
                   />
+                </td>
+                <td className="px-4 py-3 text-gray-600">
+                  {r.sellingPrice != null ? `MVR ${formatMVR(r.sellingPrice)}` : "-"}
+                  {r.unitLabel && <span className="text-gray-400"> / {r.unitLabel}</span>}
+                </td>
+                <td className="px-4 py-3">
+                  {r.unitId ? (
+                    <input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      defaultValue={r.costPrice ?? ""}
+                      placeholder="—"
+                      onBlur={(e) => {
+                        const value = e.target.value.trim();
+                        applyCostPrice(r.id, r.unitId!, value ? Number(value) : null);
+                      }}
+                      className="w-20 border border-gray-200 rounded px-1.5 py-1 text-xs"
+                    />
+                  ) : (
+                    <span className="text-gray-300">-</span>
+                  )}
                 </td>
               </tr>
             );

@@ -59,6 +59,7 @@ export default async function EditProductPage({
             label: u.label,
             packSize: u.packSize,
             price: String(u.price),
+            costPrice: u.costPrice != null ? String(u.costPrice) : "",
           })),
         }}
       />

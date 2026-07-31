@@ -129,6 +129,7 @@ export async function createProduct(formData: FormData) {
   const unitLabels = formData.getAll("unitLabel") as string[];
   const unitPackSizes = formData.getAll("unitPackSize") as string[];
   const unitPrices = formData.getAll("unitPrice") as string[];
+  const unitCostPrices = formData.getAll("unitCostPrice") as string[];
   const quantityOnHand = Number(formData.get("quantityOnHand") ?? 0);
   const lowStockThreshold = Number(formData.get("lowStockThreshold") ?? 10);
 
@@ -139,6 +140,7 @@ export async function createProduct(formData: FormData) {
       label: label.trim(),
       packSize: unitPackSizes[i]?.trim() ?? "",
       price: Number(unitPrices[i] ?? 0),
+      costPrice: unitCostPrices[i]?.trim() ? Number(unitCostPrices[i]) : null,
       isDefault: i === 0,
     }))
     .filter((u) => u.label && u.price >= 0);
@@ -196,21 +198,23 @@ export async function updateProduct(productId: string, formData: FormData) {
   const unitLabels = formData.getAll("unitLabel") as string[];
   const unitPackSizes = formData.getAll("unitPackSize") as string[];
   const unitPrices = formData.getAll("unitPrice") as string[];
+  const unitCostPrices = formData.getAll("unitCostPrice") as string[];
 
   for (let i = 0; i < unitLabels.length; i++) {
     const label = unitLabels[i]?.trim();
     if (!label) continue;
     const price = Number(unitPrices[i] ?? 0);
     const packSize = unitPackSizes[i]?.trim() ?? "";
+    const costPrice = unitCostPrices[i]?.trim() ? Number(unitCostPrices[i]) : null;
     const id = unitIds[i];
     if (id) {
       await prisma.productUnit.update({
         where: { id },
-        data: { label, packSize, price },
+        data: { label, packSize, price, costPrice },
       });
     } else {
       await prisma.productUnit.create({
-        data: { productId, label, packSize, price },
+        data: { productId, label, packSize, price, costPrice },
       });
     }
   }
@@ -272,6 +276,16 @@ export async function setInventoryThreshold(inventoryItemId: string, threshold: 
     data: { lowStockThreshold: threshold },
   });
   revalidatePath("/admin/inventory");
+}
+
+export async function setUnitCostPrice(unitId: string, costPrice: number | null) {
+  await requireCatalogManager();
+  await prisma.productUnit.update({
+    where: { id: unitId },
+    data: { costPrice },
+  });
+  revalidatePath("/admin/inventory");
+  revalidatePath("/admin/products");
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {

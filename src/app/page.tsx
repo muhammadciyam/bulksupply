@@ -3,7 +3,7 @@ import { Logo } from "@/components/Logo";
 import { CategorySidebar } from "@/components/CategorySidebar";
 import { BannerCarousel } from "@/components/BannerCarousel";
 import { ProductCard } from "@/components/ProductCard";
-import { prisma } from "@/lib/prisma";
+import { getStorefrontProducts, getBannerImages } from "@/lib/cached-data";
 import { Prisma } from "@prisma/client";
 
 export default async function Home({
@@ -18,15 +18,8 @@ export default async function Home({
   if (q) where.name = { contains: q };
 
   const [products, bannerImageRows] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      include: {
-        units: { orderBy: { isDefault: "desc" } },
-        images: { orderBy: { sortOrder: "asc" } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.bannerImage.findMany({ orderBy: [{ slot: "asc" }, { sortOrder: "asc" }] }),
+    getStorefrontProducts(where),
+    getBannerImages(),
   ]);
 
   const imagesBySlot: string[][] = [[], [], [], []];

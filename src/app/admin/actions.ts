@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
@@ -147,6 +147,7 @@ export async function createProduct(formData: FormData) {
   revalidatePath("/admin/products");
   revalidatePath("/admin/inventory");
   revalidatePath("/");
+  updateTag("products");
   redirect(
     `/admin/products/${product.id}${imageError ? `?imageError=${encodeURIComponent(imageError)}` : ""}`
   );
@@ -198,6 +199,7 @@ export async function updateProduct(productId: string, formData: FormData) {
   revalidatePath("/admin/products");
   revalidatePath(`/admin/products/${productId}`);
   revalidatePath("/");
+  updateTag("products");
   if (imageError) {
     redirect(`/admin/products/${productId}?imageError=${encodeURIComponent(imageError)}`);
   }
@@ -209,6 +211,7 @@ export async function deleteProduct(productId: string) {
   revalidatePath("/admin/products");
   revalidatePath("/admin/inventory");
   revalidatePath("/");
+  updateTag("products");
   redirect("/admin/products");
 }
 
@@ -221,6 +224,7 @@ export async function removeProductImage(imageId: string) {
   revalidatePath("/admin/products");
   revalidatePath(`/admin/products/${row.productId}`);
   revalidatePath("/");
+  updateTag("products");
 }
 
 export async function adjustInventory(inventoryItemId: string, change: number, reason: string) {
@@ -404,6 +408,7 @@ export async function addBannerImage(slot: 1 | 2 | 3 | 4, formData: FormData) {
     await prisma.bannerImage.update({ where: { id: row.id }, data: { imageUrl } });
     revalidatePath("/");
     revalidatePath("/admin/settings");
+    updateTag("banners");
     return { id: row.id, imageUrl };
   } catch (err) {
     await prisma.bannerImage.delete({ where: { id: row.id } }).catch(() => {});
@@ -419,6 +424,7 @@ export async function removeBannerImage(imageId: string) {
   await prisma.bannerImage.delete({ where: { id: imageId } });
   revalidatePath("/");
   revalidatePath("/admin/settings");
+  updateTag("banners");
 }
 
 export async function upsertDelivery(orderId: string, formData: FormData) {
@@ -456,6 +462,7 @@ export async function createCategory(formData: FormData) {
     const category = await prisma.category.create({ data: { name, slug: slugify(name) } });
     revalidatePath("/admin/products");
     revalidatePath("/");
+    updateTag("categories");
     return category;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
@@ -474,6 +481,7 @@ export async function deleteCategory(categoryId: string) {
   await prisma.category.delete({ where: { id: categoryId } });
   revalidatePath("/admin/products");
   revalidatePath("/");
+  updateTag("categories");
 }
 
 export async function createStaffUser(formData: FormData) {

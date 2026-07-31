@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { getCategories } from "@/lib/cached-data";
 
 export async function CategorySidebar({ activeSlug }: { activeSlug?: string }) {
-  const categories = await prisma.category.findMany({ orderBy: { sortOrder: "asc" } });
+  const categories = await getCategories();
 
   return (
     <aside className="w-full md:w-56 shrink-0">

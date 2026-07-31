@@ -19,6 +19,7 @@ export async function CategorySidebar({ activeSlug }: { activeSlug?: string }) {
         <ul className="space-y-0.5">
           {topLevel.map((c) => {
             const children = categories.filter((sub) => sub.parentId === c.id);
+            const isActiveBranch = activeSlug === c.slug || children.some((sub) => sub.slug === activeSlug);
             return (
               <li key={c.id}>
                 <Link
@@ -31,7 +32,7 @@ export async function CategorySidebar({ activeSlug }: { activeSlug?: string }) {
                 >
                   {c.name}
                 </Link>
-                {children.length > 0 && (
+                {children.length > 0 && isActiveBranch && (
                   <ul className="pl-3 space-y-0.5">
                     {children.map((sub) => (
                       <li key={sub.id}>

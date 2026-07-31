@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Logo } from "@/components/Logo";
 import { CategorySidebar } from "@/components/CategorySidebar";
@@ -18,8 +19,8 @@ export default async function Home({
   if (q) where.name = { contains: q };
 
   const categories = category ? await getCategories() : [];
+  const matched = category ? categories.find((c) => c.slug === category) : undefined;
   if (category) {
-    const matched = categories.find((c) => c.slug === category);
     if (matched) {
       // A parent category also includes products from its subcategories;
       // a subcategory (or a category with no children) matches only itself.
@@ -29,6 +30,12 @@ export default async function Home({
       where.category = { slug: category };
     }
   }
+
+  // Row of subcategory chips shown above the product grid: viewing a parent
+  // shows its children to drill into, viewing a subcategory shows its
+  // siblings (via the shared parent) so it's easy to switch between them.
+  const chipParent = matched ? (matched.parentId ? categories.find((c) => c.id === matched.parentId) : matched) : undefined;
+  const subcategoryChips = chipParent ? categories.filter((c) => c.parentId === chipParent.id) : [];
 
   const [products, bannerImageRows] = await Promise.all([
     getStorefrontProducts(where),
@@ -51,6 +58,33 @@ export default async function Home({
         <div className="flex flex-col md:flex-row gap-6 mt-4 md:mt-6">
           <CategorySidebar activeSlug={category} />
           <section className="flex-1">
+            {chipParent && subcategoryChips.length > 0 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-3 -mx-1 px-1">
+                <Link
+                  href={`/?category=${chipParent.slug}`}
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide whitespace-nowrap ${
+                    matched?.id === chipParent.id
+                      ? "bg-brand-green text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  All {chipParent.name}
+                </Link>
+                {subcategoryChips.map((sub) => (
+                  <Link
+                    key={sub.id}
+                    href={`/?category=${sub.slug}`}
+                    className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide whitespace-nowrap ${
+                      matched?.id === sub.id
+                        ? "bg-brand-green text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {sub.name}
+                  </Link>
+                ))}
+              </div>
+            )}
             {q && (
               <p className="text-sm text-gray-500 mb-3">
                 Showing results for <span className="font-semibold">&quot;{q}&quot;</span>

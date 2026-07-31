@@ -75,6 +75,7 @@ export function MobileCategoryFilterClient({
             <div className="border-t border-gray-100 mt-1 pt-1">
               {topLevel.map((c) => {
                 const children = categories.filter((sub) => sub.parentId === c.id);
+                const isActiveBranch = activeSlug === c.slug || children.some((sub) => sub.slug === activeSlug);
                 return (
                   <div key={c.id}>
                     <Link
@@ -86,7 +87,7 @@ export function MobileCategoryFilterClient({
                     >
                       {c.name}
                     </Link>
-                    {children.length > 0 && (
+                    {children.length > 0 && isActiveBranch && (
                       <div className="pl-4">
                         {children.map((sub) => (
                           <Link

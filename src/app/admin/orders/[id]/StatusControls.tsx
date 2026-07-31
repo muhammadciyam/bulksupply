@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Check, Lock } from "lucide-react";
 import { ORDER_STEPS } from "@/lib/format";
 import { updateOrderStatus } from "../../actions";
@@ -17,12 +17,16 @@ export function StatusControls({
   allowedStatuses: OrderStatus[];
 }) {
   const [status, setLocalStatus] = useState(currentStatus);
+  const [prevCurrentStatus, setPrevCurrentStatus] = useState(currentStatus);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
   // Stay in sync if the server sends a fresh currentStatus (e.g. after
   // revalidation, or a change made by another staff member).
-  useEffect(() => setLocalStatus(currentStatus), [currentStatus]);
+  if (currentStatus !== prevCurrentStatus) {
+    setPrevCurrentStatus(currentStatus);
+    setLocalStatus(currentStatus);
+  }
 
   const stepIndex = ORDER_STEPS.findIndex((s) => s.key === status);
   const isCancelled = status === "CANCELLED";

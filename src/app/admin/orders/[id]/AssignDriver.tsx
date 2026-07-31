@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Truck } from "lucide-react";
 import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 
@@ -16,10 +16,14 @@ export function AssignDriver({
   onAssign: (orderId: string, staffId: string | null) => Promise<void>;
 }) {
   const [driverId, setDriverId] = useState(currentDriverId ?? "");
+  const [prevCurrentDriverId, setPrevCurrentDriverId] = useState(currentDriverId);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
-  useEffect(() => setDriverId(currentDriverId ?? ""), [currentDriverId]);
+  if (currentDriverId !== prevCurrentDriverId) {
+    setPrevCurrentDriverId(currentDriverId);
+    setDriverId(currentDriverId ?? "");
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const staffId = e.target.value || null;

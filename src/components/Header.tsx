@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Search, Gift, ShoppingCart, UserCircle, Store, ChevronDown, LogOut, LayoutDashboard } from "lucide-react";
+import { Search, ShoppingCart, UserCircle, Store, LogOut, LayoutDashboard } from "lucide-react";
 import { Logo } from "./Logo";
 import { AuthModal } from "./AuthModal";
 import { useCartStore } from "@/lib/cart-store";
@@ -75,13 +75,6 @@ export function Header() {
             </div>
           </form>
           <div className="flex items-center gap-1.5 sm:gap-2 ml-auto relative" ref={menuRef}>
-            <button
-              className="hidden sm:flex items-center justify-center h-9 w-9 rounded-full bg-sky-50 text-gray-500 hover:bg-sky-100 transition-colors"
-              title="Rewards"
-            >
-              <Gift size={18} />
-            </button>
-
             {status === "authenticated" && (
               <button
                 onClick={() => setMenuOpen((v) => !v)}

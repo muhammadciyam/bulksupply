@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -46,11 +46,13 @@ export function AdminShell({
   const pathname = usePathname();
   const items = NAV.filter((item) => item.roles.includes(role));
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
 
   // Close the mobile drawer whenever the route changes.
-  useEffect(() => {
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setDrawerOpen(false);
-  }, [pathname]);
+  }
 
   return (
     <div className="min-h-screen flex bg-gray-50">

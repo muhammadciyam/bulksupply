@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 
@@ -13,13 +13,17 @@ type Slip = {
 export function PaymentSlipUpload({ orderId, slip }: { orderId: string; slip: Slip }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [prevSlipProp, setPrevSlipProp] = useState(slip);
   const [localSlip, setLocalSlip] = useState(slip);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   // Stay in sync once the server (re)confirms the slip, e.g. after
   // router.refresh() below, or a staff verification/rejection elsewhere.
-  useEffect(() => setLocalSlip(slip), [slip]);
+  if (slip !== prevSlipProp) {
+    setPrevSlipProp(slip);
+    setLocalSlip(slip);
+  }
 
   async function handleUpload() {
     const file = inputRef.current?.files?.[0];

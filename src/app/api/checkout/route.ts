@@ -22,9 +22,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
   }
 
-  const total = lines.reduce((sum, l) => sum + l.price * l.quantity, 0);
   const orderNumber = String(200000 + Math.floor(Math.random() * 90000));
-  const referenceNo = String(10000000 + Math.floor(Math.random() * 89999999));
 
   const order = await prisma.order.create({
     data: {

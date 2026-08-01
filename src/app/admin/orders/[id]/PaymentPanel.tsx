@@ -93,6 +93,30 @@ export function PaymentPanel({
     });
   }
 
+  async function handleStaffUpload() {
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) {
+      setUploadError("Choose a file first");
+      return;
+    }
+    setUploadError("");
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`/api/orders/${orderId}/payment-slip`, {
+      method: "POST",
+      body: formData,
+    });
+    setUploading(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setUploadError(data.error ?? "Upload failed");
+      return;
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    router.refresh();
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -164,6 +188,34 @@ export function PaymentPanel({
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {canVerify && !invoice && (
+          <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+            <p className="text-xs font-medium text-gray-600">
+              {slip ? "Replace with your own upload" : "Or upload it yourself"}
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,application/pdf"
+                className="text-xs"
+              />
+              <button
+                onClick={handleStaffUpload}
+                disabled={uploading}
+                className="flex items-center gap-1.5 bg-brand-green hover:bg-brand-green-dark text-white text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-60"
+              >
+                <UploadCloud size={14} /> {uploading ? "Uploading..." : "Upload Slip"}
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400">
+              JPG, PNG, or PDF — up to 5MB. Uploaded here on the customer&apos;s behalf, it&apos;s marked verified
+              immediately.
+            </p>
+            {uploadError && <p className="text-xs text-brand-red">{uploadError}</p>}
           </div>
         )}
       </div>

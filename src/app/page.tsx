@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Logo } from "@/components/Logo";
 import { CategorySidebar } from "@/components/CategorySidebar";

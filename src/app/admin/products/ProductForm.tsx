@@ -5,6 +5,7 @@ import { Plus, Trash2, X, Image as ImageIcon, Info, Tag, Boxes } from "lucide-re
 import { removeProductImage, addProductImagesToProduct } from "../actions";
 import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 import { SubmitButton } from "@/components/SubmitButton";
+import { FileChooserInput } from "@/components/FileChooserInput";
 
 const inputClass =
   "w-full border border-gray-300 rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-green/30 focus:border-brand-green";
@@ -77,6 +78,7 @@ function ProductImages({ initialImages, productId }: { initialImages: ImageRow[]
   const [addedImages, setAddedImages] = useState<ImageRow[]>([]);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
+  const [fileChooserKey, setFileChooserKey] = useState(0);
   const [busy, startTransition] = useTransition();
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -129,6 +131,7 @@ function ProductImages({ initialImages, productId }: { initialImages: ImageRow[]
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (urlInputRef.current) urlInputRef.current.value = "";
     setPendingCount(0);
+    setFileChooserKey((k) => k + 1);
 
     startTransition(async () => {
       try {
@@ -185,20 +188,16 @@ function ProductImages({ initialImages, productId }: { initialImages: ImageRow[]
       <div className="space-y-2 pt-1">
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">Add photos from your computer</label>
-          <input
+          <FileChooserInput
+            key={fileChooserKey}
             ref={fileInputRef}
-            type="file"
             name="imageFile"
             multiple
             accept="image/jpeg,image/png,image/webp"
             onChange={(e) => setPendingCount(e.target.files?.length ?? 0)}
-            className="w-full text-xs"
           />
-          {pendingCount > 0 && (
-            <p className="text-[11px] text-gray-400 mt-1">
-              {pendingCount} file{pendingCount === 1 ? "" : "s"} selected
-              {!productId && " — added when you save"}.
-            </p>
+          {pendingCount > 0 && !productId && (
+            <p className="text-[11px] text-gray-400 mt-1">Added when you save.</p>
           )}
         </div>
         <p className="text-[11px] text-gray-400">or paste an image URL below to fetch it automatically</p>

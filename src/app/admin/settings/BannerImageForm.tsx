@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { addBannerImage, removeBannerImage } from "../actions";
 import { isNextNavigationSignal } from "@/lib/is-redirect-error";
+import { FileChooserInput } from "@/components/FileChooserInput";
 
 type BannerImg = { id: string; imageUrl: string };
 type PendingImg = { tempId: string; previewUrl: string };
@@ -22,6 +23,7 @@ export function BannerImageForm({
   const [pendingImages, setPendingImages] = useState<PendingImg[]>([]);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
+  const [fileChooserKey, setFileChooserKey] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -35,6 +37,7 @@ export function BannerImageForm({
 
     if (previewUrl) setPendingImages((imgs) => [...imgs, { tempId, previewUrl }]);
     formRef.current?.reset();
+    setFileChooserKey((k) => k + 1);
 
     startTransition(async () => {
       try {
@@ -110,12 +113,7 @@ export function BannerImageForm({
       )}
 
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-2">
-        <input
-          type="file"
-          name="imageFile"
-          accept="image/jpeg,image/png,image/webp"
-          className="w-full text-xs"
-        />
+        <FileChooserInput key={fileChooserKey} name="imageFile" accept="image/jpeg,image/png,image/webp" />
         <input
           type="url"
           name="imageUrl"

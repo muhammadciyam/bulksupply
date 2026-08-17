@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FileText, Check, X, Receipt, UploadCloud } from "lucide-react";
 import { isNextNavigationSignal } from "@/lib/is-redirect-error";
+import { FileChooserInput } from "@/components/FileChooserInput";
 
 type Slip = {
   fileName: string;
@@ -54,6 +55,7 @@ export function PaymentPanel({
   const [reason, setReason] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [fileChooserKey, setFileChooserKey] = useState(0);
 
   function handleVerify() {
     setError("");
@@ -114,6 +116,7 @@ export function PaymentPanel({
       return;
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
+    setFileChooserKey((k) => k + 1);
     router.refresh();
   }
 
@@ -197,11 +200,10 @@ export function PaymentPanel({
               {slip ? "Replace with your own upload" : "Or upload it yourself"}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
-              <input
+              <FileChooserInput
+                key={fileChooserKey}
                 ref={fileInputRef}
-                type="file"
                 accept="image/jpeg,image/png,application/pdf"
-                className="text-xs"
               />
               <button
                 onClick={handleStaffUpload}

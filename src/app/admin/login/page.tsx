@@ -69,11 +69,6 @@ export default function AdminLoginPage() {
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
-        <p className="text-center text-[11px] text-gray-400 mt-6 space-y-0.5">
-          <span className="block">Demo admin: admin@bulksupply.mv / Admin@123</span>
-          <span className="block">Demo cashier: cashier@bulksupply.mv / Cashier@123</span>
-          <span className="block">Demo delivery: delivery@bulksupply.mv / Delivery@123</span>
-        </p>
       </div>
     </div>
   );

@@ -625,6 +625,28 @@ export async function createCategory(formData: FormData) {
   }
 }
 
+export async function updateCategory(categoryId: string, formData: FormData) {
+  await requireCatalogManager();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) throw new Error("Category name is required");
+
+  try {
+    const category = await prisma.category.update({
+      where: { id: categoryId },
+      data: { name, slug: slugify(name) },
+    });
+    revalidatePath("/admin/products");
+    revalidatePath("/");
+    updateTag("categories");
+    return category;
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw new Error("A category with this name already exists");
+    }
+    throw err;
+  }
+}
+
 export async function deleteCategory(categoryId: string) {
   await requireCatalogManager();
   const [productCount, childCount] = await Promise.all([

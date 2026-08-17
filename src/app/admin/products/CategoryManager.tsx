@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { X, Plus } from "lucide-react";
-import { createCategory, deleteCategory } from "../actions";
+import { X, Plus, Pencil, Check } from "lucide-react";
+import { createCategory, deleteCategory, updateCategory } from "../actions";
 import { isNextNavigationSignal } from "@/lib/is-redirect-error";
 
 type Category = { id: string; name: string; productCount: number; parentId: string | null };
@@ -10,15 +10,75 @@ type Category = { id: string; name: string; productCount: number; parentId: stri
 function CategoryChip({
   category,
   pending,
+  isEditing,
+  editValue,
+  onEditValueChange,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
   onRemove,
 }: {
   category: Category;
   pending: boolean;
+  isEditing: boolean;
+  editValue: string;
+  onEditValueChange: (value: string) => void;
+  onStartEdit: (category: Category) => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
   onRemove: (id: string) => void;
 }) {
+  if (isEditing) {
+    return (
+      <span className="flex items-center gap-1 bg-gray-100 pl-2 pr-1 py-1 rounded-full">
+        <input
+          autoFocus
+          value={editValue}
+          onChange={(e) => onEditValueChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onSaveEdit();
+            } else if (e.key === "Escape") {
+              onCancelEdit();
+            }
+          }}
+          className="w-32 text-xs bg-white border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-green"
+        />
+        <button
+          type="button"
+          onClick={onSaveEdit}
+          disabled={pending}
+          title="Save"
+          className="h-4 w-4 rounded-full flex items-center justify-center text-brand-green hover:bg-gray-300 disabled:opacity-50"
+        >
+          <Check size={12} />
+        </button>
+        <button
+          type="button"
+          onClick={onCancelEdit}
+          disabled={pending}
+          title="Cancel"
+          className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-gray-300 disabled:opacity-50"
+        >
+          <X size={11} />
+        </button>
+      </span>
+    );
+  }
+
   return (
     <span className="flex items-center gap-1.5 bg-gray-100 text-gray-700 text-xs font-medium pl-2.5 pr-1.5 py-1 rounded-full">
       {category.name}
+      <button
+        type="button"
+        onClick={() => onStartEdit(category)}
+        disabled={pending}
+        title="Rename category"
+        className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-gray-300 disabled:opacity-50"
+      >
+        <Pencil size={10} />
+      </button>
       <button
         type="button"
         onClick={() => onRemove(category.id)}
@@ -38,6 +98,8 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
   const [parentId, setParentId] = useState("");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   const topLevel = categories.filter((c) => !c.parentId);
   const childrenByParent = new Map<string, Category[]>();
@@ -79,6 +141,42 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
     });
   }
 
+  function handleStartEdit(category: Category) {
+    setError("");
+    setEditingId(category.id);
+    setEditValue(category.name);
+  }
+
+  function handleCancelEdit() {
+    setEditingId(null);
+    setEditValue("");
+  }
+
+  function handleSaveEdit() {
+    const trimmed = editValue.trim();
+    const id = editingId;
+    if (!id || !trimmed) return;
+
+    const prevCategories = categories;
+    // Optimistic: rename immediately, revert if the save fails.
+    setCategories((c) => c.map((cat) => (cat.id === id ? { ...cat, name: trimmed } : cat)));
+    setEditingId(null);
+    setEditValue("");
+
+    const formData = new FormData();
+    formData.set("name", trimmed);
+
+    startTransition(async () => {
+      try {
+        await updateCategory(id, formData);
+      } catch (err) {
+        if (isNextNavigationSignal(err)) throw err;
+        setCategories(prevCategories);
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      }
+    });
+  }
+
   function handleRemove(id: string) {
     setError("");
     const prevCategories = categories;
@@ -105,12 +203,33 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
             const children = childrenByParent.get(c.id) ?? [];
             return (
               <div key={c.id} className="flex flex-wrap items-center gap-2">
-                <CategoryChip category={c} pending={pending} onRemove={handleRemove} />
+                <CategoryChip
+                  category={c}
+                  pending={pending}
+                  isEditing={editingId === c.id}
+                  editValue={editValue}
+                  onEditValueChange={setEditValue}
+                  onStartEdit={handleStartEdit}
+                  onSaveEdit={handleSaveEdit}
+                  onCancelEdit={handleCancelEdit}
+                  onRemove={handleRemove}
+                />
                 {children.length > 0 && (
                   <>
                     <span className="text-gray-300">→</span>
                     {children.map((sub) => (
-                      <CategoryChip key={sub.id} category={sub} pending={pending} onRemove={handleRemove} />
+                      <CategoryChip
+                        key={sub.id}
+                        category={sub}
+                        pending={pending}
+                        isEditing={editingId === sub.id}
+                        editValue={editValue}
+                        onEditValueChange={setEditValue}
+                        onStartEdit={handleStartEdit}
+                        onSaveEdit={handleSaveEdit}
+                        onCancelEdit={handleCancelEdit}
+                        onRemove={handleRemove}
+                      />
                     ))}
                   </>
                 )}

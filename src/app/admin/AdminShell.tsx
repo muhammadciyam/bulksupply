@@ -64,7 +64,7 @@ export function AdminShell({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 shrink-0 bg-brand-navy text-white flex flex-col transform transition-transform duration-200 md:static md:z-auto md:w-60 md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 shrink-0 bg-green-900 text-white flex flex-col transform transition-transform duration-200 md:static md:z-auto md:w-60 md:translate-x-0 ${
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

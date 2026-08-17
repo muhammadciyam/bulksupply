@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UploadCloud, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { FileChooserInput } from "@/components/FileChooserInput";
 
 type Slip = {
   fileName: string;
@@ -81,12 +82,7 @@ export function PaymentSlipUpload({ orderId, slip }: { orderId: string; slip: Sl
         </div>
       )}
       <div className="flex items-center gap-2 flex-wrap">
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/jpeg,image/png,application/pdf"
-          className="text-xs"
-        />
+        <FileChooserInput ref={inputRef} accept="image/jpeg,image/png,application/pdf" />
         <button
           onClick={handleUpload}
           disabled={uploading}
